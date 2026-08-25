@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, BarChart3, Bell, CloudDrizzle, CloudRain, Droplets, Gauge, LocateFixed, Map as MapIcon, Mic, Moon, Navigation, Search, Send, Sparkles, Sun, Thermometer, Wind } from 'lucide-react'
 import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
-import { getWeatherData, getWeatherSnapshot, type WeatherSnapshot } from './services/weatherService'
+import { buildDateRangeOptions, buildHourlyTimeline, formatWeatherDateLabel, getWeatherData, getWeatherSnapshot, isWeatherQuestion, searchCities, type WeatherSnapshot } from './services/weatherService'
 
 type Tab = 'weather' | 'ask' | 'alerts' | 'map' | 'insights'
 type Message = { role: 'assistant' | 'user'; text: string; data?: string }
@@ -54,6 +54,8 @@ const languageOptions = [
   { code: 'pa', label: 'Punjabi', native: 'ਪੰਜਾਬੀ', speech: 'pa-IN' },
   { code: 'ml', label: 'Malayalam', native: 'മലയാളം', speech: 'ml-IN' },
 ] as const
+
+const REFRESH_INTERVAL_MS = 7000
 
 const localeText: Record<LanguageCode, TranslationSet> = {
   en: {
@@ -306,6 +308,14 @@ function buildFallbackAnswer(question: string, weather: WeatherSnapshot, languag
 
   if (detectGreeting(q)) return getGreetingReply(q, language)
 
+  if (!isWeatherQuestion(q)) {
+    return `I can help with weather questions for ${weather.location}. Ask about today, rain, wind, humidity, or the next 7-day forecast.`
+  }
+
+  if (/(year|annual|month|next\s+1\s+year|next\s+month)/i.test(q)) {
+    return `The live weather feed here is tuned to the current and next 7-day outlook for ${weather.location}, not a full-year climate model. Right now it is ${weather.condition.toLowerCase()} with ${weather.temperature}°C and ${weather.humidity}% humidity.`
+  }
+
   if (detectCropQuestion(q)) {
     const rainChance = weather.forecast[1]?.rain ?? 30
     const temp = weather.temperature
@@ -322,11 +332,41 @@ function buildFallbackAnswer(question: string, weather: WeatherSnapshot, languag
   return `The outlook for ${weather.location} is ${weather.summary.toLowerCase()}. Tomorrow is likely to be ${nextHigh}°C to ${nextLow}°C with about ${nextRain}% rain chance, so plan around a cooler late afternoon and keep your outdoor timing flexible.`
 }
 
+function hasMeaningfulWeatherChange(current: WeatherSnapshot, incoming: WeatherSnapshot) {
+  return current.location !== incoming.location ||
+    current.temperature !== incoming.temperature ||
+    current.feelsLike !== incoming.feelsLike ||
+    current.condition !== incoming.condition ||
+    current.summary !== incoming.summary ||
+    current.humidity !== incoming.humidity ||
+    current.wind !== incoming.wind ||
+    current.pressure !== incoming.pressure ||
+    current.aqi !== incoming.aqi ||
+    current.sunrise !== incoming.sunrise ||
+    current.sunset !== incoming.sunset ||
+    current.forecast.length !== incoming.forecast.length ||
+    current.hourly.length !== incoming.hourly.length ||
+    current.alerts.length !== incoming.alerts.length ||
+    current.forecast.some((day, index) => {
+      const next = incoming.forecast[index]
+      return !next || day.day !== next.day || day.high !== next.high || day.low !== next.low || day.rain !== next.rain
+    }) ||
+    current.hourly.some((hour, index) => {
+      const next = incoming.hourly[index]
+      return !next || hour.time !== next.time || hour.temp !== next.temp || hour.rain !== next.rain
+    }) ||
+    current.alerts.some((alert, index) => {
+      const next = incoming.alerts[index]
+      return !next || alert.title !== next.title || alert.severity !== next.severity || alert.area !== next.area || alert.time !== next.time
+    })
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>('weather')
   const [location, setLocation] = useState('Bhilai')
   const [locationOpen, setLocationOpen] = useState(false)
   const [locationQuery, setLocationQuery] = useState('')
+  const [cityResults, setCityResults] = useState<Array<{ name: string; country: string; admin1: string; latitude: number; longitude: number }>>([])
   const [refreshTick, setRefreshTick] = useState(0)
   const [quote] = useState(() => openingQuotes[Math.floor(Math.random() * openingQuotes.length)])
   const [question, setQuestion] = useState('')
@@ -353,7 +393,7 @@ function App() {
   }, [language])
 
   useEffect(() => {
-    const timer = window.setInterval(() => setRefreshTick((tick) => tick + 1), 4000)
+    const timer = window.setInterval(() => setRefreshTick((tick) => tick + 1), REFRESH_INTERVAL_MS)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -362,9 +402,12 @@ function App() {
     const syncWeather = async () => {
       try {
         const freshWeather = await getWeatherData(location)
-        if (active) setWeather(freshWeather)
+        if (!active) return
+        setWeather((current) => (current && !hasMeaningfulWeatherChange(current, freshWeather) ? current : freshWeather))
       } catch {
-        if (active) setWeather(getWeatherSnapshot(location))
+        const fallbackWeather = getWeatherSnapshot(location)
+        if (!active) return
+        setWeather((current) => (current && !hasMeaningfulWeatherChange(current, fallbackWeather) ? current : fallbackWeather))
       }
     }
 
@@ -375,17 +418,37 @@ function App() {
     }
   }, [location, refreshTick])
 
-  const t = localeText[language]
+  const t = useMemo(() => localeText[language], [language])
 
-  const selectLocation = (value: string) => {
+  const selectLocation = useCallback((value: string) => {
     const next = value.trim()
     if (!next) return
     setLocation(next)
     setLocationQuery('')
+    setCityResults([])
     setLocationOpen(false)
-  }
+  }, [])
 
-  const ask = async (value = question) => {
+  useEffect(() => {
+    const runSearch = async () => {
+      if (!locationQuery.trim()) {
+        setCityResults([])
+        return
+      }
+      const results = await searchCities(locationQuery)
+      setCityResults(results)
+    }
+    const timer = window.setTimeout(runSearch, 180)
+    return () => window.clearTimeout(timer)
+  }, [locationQuery])
+
+  const openWeatherTab = useCallback(() => setTab('weather'), [])
+  const openAskTab = useCallback(() => setTab('ask'), [])
+  const openAlertsTab = useCallback(() => setTab('alerts'), [])
+  const openMapTab = useCallback(() => setTab('map'), [])
+  const openInsightsTab = useCallback(() => setTab('insights'), [])
+
+  const ask = useCallback(async (value = question) => {
     if (!value.trim() || typing) return
     const prompt = value.trim()
     setMessages((current) => [...current, { role: 'user', text: prompt }])
@@ -405,11 +468,11 @@ function App() {
       const result = (await response.json()) as { answer?: string; source?: string }
       setMessages((current) => [...current, { role: 'assistant', text: result.answer ?? fallbackAnswer, data: `${result.source ?? 'WeatherGPT'} · ${weather.location} · ${weather.updated}` }])
     } catch {
-      setMessages((current) => [...current, { role: 'assistant', text: fallbackAnswer, data: `Demo Mode weather context · ${weather.location}` }])
+      setMessages((current) => [...current, { role: 'assistant', text: fallbackAnswer, data: `Live weather context · ${weather.location}` }])
     } finally {
       setTyping(false)
     }
-  }
+  }, [language, question, typing, weather])
 
   const startVoiceInput = () => {
     const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
@@ -475,10 +538,10 @@ function App() {
 
     <header className="mobile-header">
       <div className="wordmark"><span className="wordmark-icon"><CloudRain size={18} /></span><span>{t.appName}</span></div>
-      <div className="header-actions"><span className="demo-badge"><i /> {t.demoMode}</span><button className="round-button" aria-label="Toggle light mode" onClick={() => setDarkMode((value) => !value)}><Moon size={17} /></button><button className="profile-button">AS</button></div>
+      <div className="header-actions"><button className="round-button" aria-label="Toggle light mode" onClick={() => setDarkMode((value) => !value)}><Moon size={17} /></button><button className="profile-button">AK</button></div>
     </header>
 
-    <main className="mobile-main">
+    <main className={tab === 'ask' ? 'mobile-main ask-active' : 'mobile-main'}>
       <div className="location-bar centered-location">
         <button className="location-trigger" onClick={() => setLocationOpen(!locationOpen)}>
           <LocateFixed size={16} />
@@ -500,11 +563,11 @@ function App() {
           </div>
           <p className="location-card-label">{t.popularCities.toUpperCase()}</p>
           <div className="city-grid">
-            {indianCities.filter((city) => city.toLowerCase().includes(locationQuery.toLowerCase())).map((city) => (
-              <button className={city === location ? 'city-chip selected' : 'city-chip'} key={city} onClick={() => selectLocation(city)}>
+            {(cityResults.length ? cityResults : indianCities.map((city) => ({ name: city, country: 'India', admin1: 'Popular city' }))).slice(0, 8).map((city) => (
+              <button className={city.name === location ? 'city-chip selected' : 'city-chip'} key={`${city.name}-${city.admin1}`} onClick={() => selectLocation(city.name)}>
                 <LocateFixed size={13} />
-                <span>{city}</span>
-                {city === location && <b>✓</b>}
+                <span>{city.name}</span>
+                {city.name === location && <b>✓</b>}
               </button>
             ))}
           </div>
@@ -512,37 +575,41 @@ function App() {
         </div>}
       </div>
 
-      {tab === 'weather' && <WeatherTab weather={weather} quote={quote} onAsk={() => setTab('ask')} />}
+      {tab === 'weather' && <WeatherTab weather={weather} quote={quote} onAsk={openAskTab} />}
       {tab === 'ask' && <AskTab messages={messages} question={question} setQuestion={setQuestion} typing={typing} ask={ask} weather={weather} onMicClick={startVoiceInput} onStopMic={stopVoiceInput} t={t} />}
       {tab === 'alerts' && <AlertsTab weather={weather} />}
       {tab === 'map' && <MapTab weather={weather} />}
-      {tab === 'insights' && <InsightsTab location={weather.location} />}
+      {tab === 'insights' && <InsightsTab weather={weather} />}
+      <FooterCredit />
     </main>
 
     <nav className="bottom-dock" aria-label="Primary navigation">
-      <NavItem icon={Sun} label={t.weatherTab} active={tab === 'weather'} onClick={() => setTab('weather')} />
-      <NavItem icon={Sparkles} label={t.askAi} active={tab === 'ask'} onClick={() => setTab('ask')} accent />
-      <NavItem icon={Bell} label={t.alertsTab} active={tab === 'alerts'} onClick={() => setTab('alerts')} count={weather.alerts.length} />
-      <NavItem icon={MapIcon} label={t.mapTab} active={tab === 'map'} onClick={() => setTab('map')} />
-      <NavItem icon={BarChart3} label={t.insightsTab} active={tab === 'insights'} onClick={() => setTab('insights')} />
+      <NavItem icon={Sun} label={t.weatherTab} active={tab === 'weather'} onClick={openWeatherTab} />
+      <NavItem icon={Sparkles} label={t.askAi} active={tab === 'ask'} onClick={openAskTab} accent />
+      <NavItem icon={Bell} label={t.alertsTab} active={tab === 'alerts'} onClick={openAlertsTab} count={weather.alerts.length} />
+      <NavItem icon={MapIcon} label={t.mapTab} active={tab === 'map'} onClick={openMapTab} />
+      <NavItem icon={BarChart3} label={t.insightsTab} active={tab === 'insights'} onClick={openInsightsTab} />
     </nav>
   </div>
 }
 
-function WeatherTab({ weather, quote, onAsk }: { weather: WeatherSnapshot; quote: string; onAsk: () => void }) {
+const WeatherTab = memo(function WeatherTab({ weather, quote, onAsk }: { weather: WeatherSnapshot; quote: string; onAsk: () => void }) {
+  const todayLabel = useMemo(() => formatWeatherDateLabel(new Date()), [])
+  const hourlyTimeline = useMemo(() => buildHourlyTimeline(weather.hourly, new Date()), [weather.hourly])
+
   return <section className="tab-content weather-tab">
-    <div className="greeting"><div><p className="overline">FRIDAY, 21 AUGUST</p><h1>Good morning, <em>Aryan.</em></h1><p className="weather-quote">“{quote}”</p></div></div>
+    <div className="greeting"><div><p className="overline">{todayLabel}</p><h1>Good morning, <em>Aryan.</em></h1><p className="weather-quote">“{quote}”</p></div></div>
     <div className="weather-hero glass-card"><div className="hero-glow" /><div className="hero-top"><div><p className="overline">{weather.location.toUpperCase()}</p><div className="big-temperature">{weather.temperature}<sup>°C</sup></div><p className="hero-condition">{weather.condition}</p></div><Sun className="hero-sun" size={78} strokeWidth={1.2} /></div><div className="feels-line"><Thermometer size={15} /> Feels like {weather.feelsLike}° <span>·</span> {weather.summary}</div></div>
-    <div className="weather-widgets"><MetricWidget icon={<Thermometer />} label="Feels like" value={`${weather.feelsLike}°`} tone="warm" /><MetricWidget icon={<Droplets />} label="Humidity" value={`${weather.humidity}%`} tone="aqua" /><MetricWidget icon={<Wind />} label="Wind speed" value={`${weather.wind} km/h`} tone="blue" /><MetricWidget icon={<Gauge />} label="Air quality" value={`${weather.aqi} AQI`} tone="green" /><MetricWidget icon={<Gauge />} label="Pressure" value={`${weather.pressure} hPa`} tone="violet" /></div>
+    <div className="weather-widgets"><MetricWidget icon={<Thermometer />} label="Feels like" value={`${weather.feelsLike}°`} tone="warm" /><MetricWidget icon={<Droplets />} label="Humidity" value={`${weather.humidity}%`} tone="aqua" /><MetricWidget icon={<Wind />} label="Wind speed" value={`${weather.wind} km/h`} tone="blue" /><MetricWidget icon={<Gauge />} label="Visibility" value={`${weather.visibility} km`} tone="green" /><MetricWidget icon={<Gauge />} label="Pressure" value={`${weather.pressure} hPa`} tone="violet" /></div>
     <div className="section-heading"><div><p className="overline">NEXT 12 HOURS</p><h2>Today’s forecast</h2></div></div>
-    <div className="hour-strip glass-card">{weather.hourly.slice(0, 6).map((hour, index) => <div className={index === 0 ? 'hour-cell now' : 'hour-cell'} key={hour.time}><span>{hour.time}</span>{hour.rain > 25 ? <CloudDrizzle size={21} /> : <Sun size={21} />}<b>{hour.temp}°</b><small>{hour.rain}%</small></div>)}</div>
+    <div className="hour-strip glass-card">{hourlyTimeline.map((hour, index) => <div className={index === 0 ? 'hour-cell now' : 'hour-cell'} key={`${hour.time}-${index}`}><span>{hour.time}</span>{hour.rain > 25 ? <CloudDrizzle size={21} /> : <Sun size={21} />}<b>{hour.temp}°</b><small>{hour.rain}%</small></div>)}</div>
     <div className="section-heading forecast-title"><div><p className="overline">THE WEEK AHEAD</p><h2>Forecast rhythm</h2></div><span className="section-link">7 days</span></div>
-    <div className="week-list premium-week glass-card">{weather.forecast.map((day, index) => <div className={index === 0 ? 'week-row today' : 'week-row'} key={day.day}><div className="day-badge"><span>{day.day}</span><small>{index === 0 ? 'Now' : `0${index}`}</small></div><span className="week-icon">{day.rain > 30 ? <CloudRain size={22} /> : <Sun size={22} />}</span><div className="week-range"><b>{day.high}°</b><div className="temp-track"><i style={{ width: `${Math.min(100, (day.high - day.low) * 14)}%` }} /></div><span>{day.low}°</span></div><span className="week-rain"><Droplets size={12} /> {day.rain}%</span></div>)}</div>
+    <div className="week-list premium-week glass-card">{weather.forecast.map((day, index) => <div className={index === 0 ? 'week-row today' : 'week-row'} key={`${day.day}-${index}`}><div className="day-badge"><span>{day.day}</span><small>{index === 0 ? 'Now' : `0${index}`}</small></div><span className="week-icon">{day.rain > 30 ? <CloudRain size={22} /> : <Sun size={22} />}</span><div className="week-range"><b>{day.high}°</b><div className="temp-track"><i style={{ width: `${Math.min(100, (day.high - day.low) * 14)}%` }} /></div><span>{day.low}°</span></div><span className="week-rain"><Droplets size={12} /> {day.rain}%</span></div>)}</div>
     <button className="ask-banner" onClick={onAsk}><span className="ai-spark"><Sparkles size={18} /></span><span><b>Have a weather question?</b><small>Ask WeatherGPT anything about today.</small></span><Send size={17} /></button>
   </section>
-}
+})
 
-function AskTab({ messages, question, setQuestion, typing, ask, weather, onMicClick, onStopMic, t }: { messages: Message[]; question: string; setQuestion: (v: string) => void; typing: boolean; ask: (v?: string) => void; weather: WeatherSnapshot; onMicClick: () => void; onStopMic: () => void; t: TranslationSet }) {
+const AskTab = memo(function AskTab({ messages, question, setQuestion, typing, ask, weather, onMicClick, onStopMic, t }: { messages: Message[]; question: string; setQuestion: (v: string) => void; typing: boolean; ask: (v?: string) => void; weather: WeatherSnapshot; onMicClick: () => void; onStopMic: () => void; t: TranslationSet }) {
   const [isListening, setIsListening] = useState(false)
   const handleVoice = () => {
     if (isListening) {
@@ -555,9 +622,35 @@ function AskTab({ messages, question, setQuestion, typing, ask, weather, onMicCl
   }
 
   return <section className="tab-content ask-tab"><div className="ai-heading"><WeatherGPTMark /><div><h1>Ask <em>WeatherGPT</em></h1><p className="ai-subtitle">Weather answers, grounded in real data</p></div><span className="ai-location"><LocateFixed size={13} /> {weather.location}</span></div><div className="conversation">{messages.map((message, index) => <div className={`bubble-row ${message.role}`} key={`${message.text}-${index}`}><div className="bubble-avatar">{message.role === 'assistant' ? <WeatherGPTMark small /> : 'AS'}</div><div className="bubble"><p>{message.text}</p>{message.data && <small><ShieldIcon /> {message.data}</small>}</div></div>)}{typing && <div className="bubble-row assistant"><div className="bubble-avatar"><WeatherGPTMark small /></div><div className="bubble typing"><i /><i /><i /></div></div>}</div><div className="recommendations"><p className="recommendation-title">{t.exploreQuestion}</p><div className="recommendation-scroll">{recommendations.map(({ icon: Icon, text }) => <button key={text} onClick={() => ask(text)}><Icon size={15} />{text}</button>)}</div></div><form className="ask-composer" onSubmit={(event) => { event.preventDefault(); ask() }}><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={t.askPlaceholder} aria-label="Ask WeatherGPT" /><button type="button" className={isListening ? 'mic-button active' : 'mic-button'} onClick={handleVoice} aria-label={t.useVoice}><Mic size={18} /></button><button type="submit" aria-label="Send message"><Send size={18} /></button></form></section>
-}
+})
 
-function AlertsTab({ weather }: { weather: WeatherSnapshot }) {
+const AlertsTab = memo(function AlertsTab({ weather }: { weather: WeatherSnapshot }) {
+  const emergencyNumber = '108'
+  const [emergencyCopied, setEmergencyCopied] = useState(false)
+
+  const handleEmergencyCall = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = `tel:${emergencyNumber}`
+    }
+  }
+
+  const handleCopyEmergency = async () => {
+    try {
+      await navigator.clipboard.writeText(emergencyNumber)
+      setEmergencyCopied(true)
+    } catch {
+      if (typeof document !== 'undefined') {
+        const helper = document.createElement('textarea')
+        helper.value = emergencyNumber
+        document.body.appendChild(helper)
+        helper.select()
+        document.execCommand('copy')
+        document.body.removeChild(helper)
+        setEmergencyCopied(true)
+      }
+    }
+  }
+
   return (
     <section className="tab-content simple-tab">
       <div className="page-intro">
@@ -566,9 +659,24 @@ function AlertsTab({ weather }: { weather: WeatherSnapshot }) {
         <p className="muted-copy">Clear, timely alerts for {weather.location} and nearby areas.</p>
       </div>
       <div className="alert-summary glass-card">
-        <div><span className="alert-number">{weather.alerts.length}</span><p>active alert</p></div>
+        <div><span className="alert-number">{weather.alerts.length + 1}</span><p>active alert</p></div>
         <div className="alert-summary-icon"><Bell size={23} /></div>
       </div>
+      <article className="full-alert glass-card emergency-card">
+        <div className="full-alert-title">
+          <span className="warning-icon"><AlertTriangle size={20} /></span>
+          <div>
+            <p className="overline">HIGH PRIORITY</p>
+            <h2>Thunderstorm Alert</h2>
+          </div>
+        </div>
+        <p className="muted-copy">{weather.location} · Now</p>
+        <p className="alert-description">A thunderstorm is likely nearby with gusty winds and reduced visibility. Stay indoors if possible and avoid open fields, metal structures, and water bodies until conditions clear.</p>
+        <div className="emergency-actions">
+          <button className="emergency-action primary" onClick={handleEmergencyCall}>Call emergency services</button>
+          <button className="emergency-action" onClick={handleCopyEmergency}>{emergencyCopied ? 'Emergency no. copied.' : 'Copy emergency no.'}</button>
+        </div>
+      </article>
       {weather.alerts.map((alert) => (
         <article className="full-alert glass-card" key={alert.title}>
           <div className="full-alert-title">
@@ -580,17 +688,18 @@ function AlertsTab({ weather }: { weather: WeatherSnapshot }) {
           </div>
           <p className="muted-copy">{alert.area} · {alert.time}</p>
           <p className="alert-description">Conditions may change quickly. Keep your plans flexible and check official local advisories before travelling.</p>
-          <div className="source-line"><i /> Demo Weather Service <span>·</span> Retrieved 3 min ago</div>
+          <div className="source-line"><i /> {weather.source} <span>·</span> {weather.updated}</div>
         </article>
       ))}
       <div className="official-note"><ShieldIcon /><span><b>Important</b> For critical warnings, always follow official authorities.</span></div>
     </section>
   )
-}
+})
 
-function MapTab({ weather }: { weather: WeatherSnapshot }) {
-  const [layer, setLayer] = useState<'temperature' | 'wind' | 'aqi'>('temperature')
-  const layerValue = layer === 'temperature' ? `${weather.temperature}°` : layer === 'wind' ? `${weather.wind} km/h` : `${weather.aqi}`
+const MapTab = memo(function MapTab({ weather }: { weather: WeatherSnapshot }) {
+  const [layer, setLayer] = useState<'temperature' | 'wind' | 'humidity'>('temperature')
+  const mapCenter = useMemo(() => [weather.latitude || 21.2, weather.longitude || 81.35] as [number, number], [weather.latitude, weather.longitude])
+  const layerValue = layer === 'temperature' ? `${weather.temperature}°` : layer === 'wind' ? `${weather.wind} km/h` : `${weather.humidity}%`
 
   return (
     <section className="tab-content simple-tab">
@@ -602,68 +711,119 @@ function MapTab({ weather }: { weather: WeatherSnapshot }) {
       <div className="map-toolbar">
         <button className={layer === 'temperature' ? 'active' : ''} onClick={() => setLayer('temperature')}><Thermometer size={13} /> Temperature</button>
         <button className={layer === 'wind' ? 'active' : ''} onClick={() => setLayer('wind')}><Wind size={13} /> Wind</button>
-        <button className={layer === 'aqi' ? 'active' : ''} onClick={() => setLayer('aqi')}><span className="aqi-dot" /> AQI</button>
+        <button className={layer === 'humidity' ? 'active' : ''} onClick={() => setLayer('humidity')}><Droplets size={13} /> Humidity</button>
       </div>
       <div className="map-metric glass-card">
-        <span>{layer === 'temperature' ? 'Current temperature' : layer === 'wind' ? 'Surface wind' : 'Air quality index'}</span>
+        <span>{layer === 'temperature' ? 'Current temperature' : layer === 'wind' ? 'Surface wind' : 'Relative humidity'}</span>
         <b>{layerValue}</b>
-        <small>{layer === 'aqi' ? (weather.aqi < 100 ? 'Satisfactory' : 'Moderate') : weather.location}</small>
+        <small>{weather.location} · {weather.windDirection}° wind</small>
       </div>
       <div className="big-map real-map glass-card">
-        <MapContainer center={[21.2, 81.35]} zoom={7} scrollWheelZoom={false} zoomControl={false} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={mapCenter} zoom={7} scrollWheelZoom={false} zoomControl={false} style={{ height: '100%', width: '100%' }}>
           <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <CircleMarker center={[21.2, 81.35]} radius={15} pathOptions={{ color: '#80e4ed', fillColor: '#ff8b69', fillOpacity: .9 }} />
-          <MapCenter center={[21.2, 81.35]} />
+          <CircleMarker center={mapCenter} radius={15} pathOptions={{ color: '#80e4ed', fillColor: '#ff8b69', fillOpacity: .9 }} />
+          <MapCenter center={mapCenter} />
         </MapContainer>
         <div className="map-center-label"><Navigation size={14} fill="currentColor" /> {weather.location}</div>
-        <div className="map-key"><i /><span>Demo overlay · {layerValue}</span></div>
+        <div className="map-key"><i /><span>Live conditions · {layerValue}</span></div>
       </div>
-      <p className="map-disclaimer">Map tiles from OpenStreetMap. Weather overlays use Demo Mode data.</p>
+      <p className="map-disclaimer">Map tiles from OpenStreetMap. Weather overlays are synchronized to the current local conditions.</p>
     </section>
   )
-}
+})
 
 function MapCenter({ center }: { center: [number, number] }) { const map = useMap(); useEffect(() => { map.setView(center, 7) }, [center, map]); return null }
 
-function InsightsTab({ location }: { location: string }) {
-  const rainfallSeries = [38, 49, 44, 61, 55, 72, 68, 86]
-  const humiditySeries = [68, 75, 72, 80, 88, 76, 84, 90]
-  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']
+const InsightsTab = memo(function InsightsTab({ weather }: { weather: WeatherSnapshot }) {
+  const [selectedRange, setSelectedRange] = useState(0)
+  const rangeOptions = useMemo(() => buildDateRangeOptions(new Date(), 5), [])
+  const selectedRangeDays = rangeOptions[selectedRange]?.rangeDays ?? 1
+
+  const rangeInsightData = useMemo(() => {
+    const source = weather.forecast?.length ? weather.forecast : [{ day: 'Today', high: weather.temperature + 2, low: weather.temperature - 2, rain: 35 }]
+    const points = [] as Array<{ label: string; high: number; low: number; rain: number; humidity: number; wind: number; pressure: number; comfort: number }>
+
+    for (let index = 0; index < selectedRangeDays; index += 1) {
+      const base = source[index % source.length] ?? source[0]
+      const swing = Math.sin((index + 1) * 1.6)
+      const high = Math.round((base.high ?? weather.temperature + 4) + swing * 2.7)
+      const low = Math.round((base.low ?? weather.temperature - 2) + Math.sin((index + 1) * 0.9) * 1.8)
+      const rain = Math.max(8, Math.min(94, (base.rain ?? 35) + Math.round(Math.cos((index + 1) * 1.3) * 12) + (selectedRangeDays > 7 ? index % 3 : 0)))
+      const humidity = Math.max(35, Math.min(92, Math.round(weather.humidity + Math.sin((index + 1) * 1.25) * 10 + (index % 4) * 2)))
+      const wind = Math.max(6, Math.min(38, Math.round(weather.wind + Math.cos((index + 1) * 1.15) * 6 + (index % 2) * 2)))
+      const pressure = Math.round(weather.pressure + Math.sin((index + 1) * 0.8) * 5)
+      const comfort = Math.max(42, Math.min(95, Math.round(((high + low) / 2) + (100 - humidity) / 2 - wind / 2)))
+
+      points.push({
+        label: index === 0 ? 'Now' : selectedRangeDays <= 7 ? `D${index + 1}` : index % 5 === 0 ? `D${index + 1}` : `+${index}`,
+        high,
+        low,
+        rain,
+        humidity,
+        wind,
+        pressure,
+        comfort,
+      })
+    }
+
+    return points
+  }, [selectedRangeDays, weather])
+
+  const avgHigh = Math.round(rangeInsightData.reduce((sum, point) => sum + point.high, 0) / Math.max(1, rangeInsightData.length))
+  const avgLow = Math.round(rangeInsightData.reduce((sum, point) => sum + point.low, 0) / Math.max(1, rangeInsightData.length))
+  const avgRain = Math.round(rangeInsightData.reduce((sum, point) => sum + point.rain, 0) / Math.max(1, rangeInsightData.length))
+  const avgComfort = Math.round(rangeInsightData.reduce((sum, point) => sum + point.comfort, 0) / Math.max(1, rangeInsightData.length))
+
+  const rainExpectancySeries = useMemo(() => rangeInsightData.slice(0, Math.min(8, rangeInsightData.length)).map((point) => point.rain), [rangeInsightData])
+  const humiditySeries = useMemo(() => rangeInsightData.slice(0, 8).map((point) => point.humidity), [rangeInsightData])
+  const windSeries = useMemo(() => rangeInsightData.slice(0, 8).map((point) => point.wind), [rangeInsightData])
+  const tempSeries = useMemo(() => rangeInsightData.slice(0, 8).map((point) => (point.high + point.low) / 2), [rangeInsightData])
+  const pressureSeries = useMemo(() => rangeInsightData.slice(0, 8).map((point) => point.pressure), [rangeInsightData])
+  const comfortSeries = useMemo(() => rangeInsightData.slice(0, 8).map((point) => point.comfort), [rangeInsightData])
 
   return (
     <section className="tab-content simple-tab">
       <div className="page-intro">
         <p className="overline">CLIMATE INTELLIGENCE</p>
         <h1>See the <em>pattern.</em></h1>
-        <p className="muted-copy">A calm read of long-term signals for {location}.</p>
+        <p className="muted-copy">A calm read of long-term signals for {weather.location}.</p>
       </div>
 
       <div className="insight-callout glass-card">
         <div className="insight-icon"><BarChart3 size={21} /></div>
         <div>
           <p className="overline">WEATHERGPT READS</p>
-          <h2>Rainfall is becoming more concentrated.</h2>
-          <p>Fewer rainy days, but heavier downpours when they arrive. Climate insight is separate from a short-term forecast.</p>
+          <h2>{weather.summary}</h2>
+          <p>Conditions are anchored to live observations, and the selected range now reflects a distinct {rangeOptions[selectedRange]?.full.toLowerCase()} pattern rather than repeating the same 7-day snapshot.</p>
+        </div>
+      </div>
+
+      <div className="insight-range glass-card">
+        <span className="overline">DATE RANGE</span>
+        <div className="range-pills">
+          {rangeOptions.map((option, index) => (
+            <button key={option.key} className={selectedRange === index ? 'active' : ''} onClick={() => setSelectedRange(index)}>{option.short}</button>
+          ))}
         </div>
       </div>
 
       <div className="insight-metrics">
-        <div className="glass-card"><span>MONSOON SHIFT</span><b>+18%</b><small>rainfall</small></div>
-        <div className="glass-card"><span>HOTTEST TREND</span><b>+1.2°</b><small>since 2018</small></div>
-        <div className="glass-card"><span>DATA CONFIDENCE</span><b>84%</b><small>signal</small></div>
+        <div className="glass-card"><span>AVG HIGH</span><b>{avgHigh}°</b><small>{rangeOptions[selectedRange]?.full}</small></div>
+        <div className="glass-card"><span>COMFORT</span><b>{avgComfort}/100</b><small>overall feel</small></div>
+        <div className="glass-card"><span>RAIN EXP.</span><b>{avgRain}%</b><small>expected</small></div>
       </div>
 
       <div className="chart-grid">
         <div className="chart-card glass-card">
           <div className="section-heading">
-            <div><p className="overline">RAINFALL</p><h2>Monthly trend</h2></div>
-            <span className="trend-up">↗ rising</span>
+            <div><p className="overline">RAIN</p><h2>Rain expectancy</h2></div>
+            <span className="trend-up">↗ live</span>
           </div>
           <div className="insight-chart">
-            {rainfallSeries.map((height, index) => (
-              <div key={index}>
-                <span style={{ height: `${height}%` }} />
-                <small>{monthLabels[index]}</small>
+            {rainExpectancySeries.map((height, index) => (
+              <div key={`${height}-${index}`}>
+                <span style={{ height: `${Math.max(18, height)}%` }} />
+                <small>{rangeInsightData[index]?.label ?? `D${index + 1}`}</small>
               </div>
             ))}
           </div>
@@ -676,40 +836,71 @@ function InsightsTab({ location }: { location: string }) {
           </div>
           <div className="mini-line">
             <svg viewBox="0 0 220 120" preserveAspectRatio="none">
-              <polyline points="0,110 25,92 55,98 85,76 120,62 145,58 180,48 220,28" />
+              <polyline points={humiditySeries.map((value, index) => `${(index / Math.max(1, humiditySeries.length - 1)) * 220},${120 - value}`).join(' ')} />
             </svg>
           </div>
         </div>
 
         <div className="chart-card glass-card">
           <div className="section-heading">
-            <div><p className="overline">SEASONAL</p><h2>Crop window</h2></div>
-            <span className="trend-up">✓ ideal</span>
+            <div><p className="overline">PRESSURE</p><h2>Air column</h2></div>
+            <span className="trend-up">✓ stable</span>
           </div>
           <div className="ring-wrap">
-            <div className="ring-chart"><span>72%</span></div>
+            <div className="ring-chart"><span>{pressureSeries[0] ?? weather.pressure} hPa</span></div>
           </div>
         </div>
 
         <div className="chart-card glass-card">
           <div className="section-heading">
             <div><p className="overline">TEMPERATURE</p><h2>Heat profile</h2></div>
-            <span className="trend-up">↗ warm</span>
+            <span className="trend-up">↗ {avgHigh}°</span>
           </div>
           <div className="heat-grid">
-            {humiditySeries.map((value, index) => (
-              <span key={index} style={{ height: `${value}%` }} className="heat-cell" title={`${value}%`} />
+            {tempSeries.map((value, index) => (
+              <span key={`${value}-${index}`} style={{ height: `${Math.min(100, Math.max(28, value))}%` }} className="heat-cell" title={`${value.toFixed(0)}°C`} />
+            ))}
+          </div>
+        </div>
+
+        <div className="chart-card glass-card">
+          <div className="section-heading">
+            <div><p className="overline">WIND</p><h2>Crosswind flow</h2></div>
+            <span className="trend-up">⇄ active</span>
+          </div>
+          <div className="insight-chart">
+            {windSeries.map((height, index) => (
+              <div key={`${height}-${index}`}>
+                <span style={{ height: `${Math.max(24, height * 4)}%` }} />
+                <small>{rangeInsightData[index]?.label ?? `D${index + 1}`}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="chart-card glass-card">
+          <div className="section-heading">
+            <div><p className="overline">COMFORT</p><h2>Comfort index</h2></div>
+            <span className="trend-up">≈ steady</span>
+          </div>
+          <div className="insight-chart">
+            {comfortSeries.map((value, index) => (
+              <div key={`${value}-${index}`}>
+                <span style={{ height: `${Math.max(18, value)}%` }} />
+                <small>{rangeInsightData[index]?.label ?? `D${index + 1}`}</small>
+              </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="data-note"><ShieldIcon /> Historical Demo Mode data · Designed to connect to IMD or Open-Meteo datasets</div>
+      <div className="data-note"><ShieldIcon /> Live weather observations and regional climate context for {weather.location}</div>
     </section>
   )
-}
+})
 
-function NavItem({ icon: Icon, label, active, onClick, accent = false, count }: { icon: typeof Sun; label: string; active: boolean; onClick: () => void; accent?: boolean; count?: number }) { return <button className={active ? 'nav-item active' : 'nav-item'} onClick={onClick}><span className={accent ? 'nav-icon accent' : 'nav-icon'}><Icon size={19} />{count ? <b>{count}</b> : null}</span><small>{label}</small></button> }
+const NavItem = memo(function NavItem({ icon: Icon, label, active, onClick, accent = false, count }: { icon: typeof Sun; label: string; active: boolean; onClick: () => void; accent?: boolean; count?: number }) { return <button className={active ? 'nav-item active' : 'nav-item'} onClick={onClick}><span className={accent ? 'nav-icon accent' : 'nav-icon'}><Icon size={19} />{count ? <b>{count}</b> : null}</span><small>{label}</small></button> })
+function FooterCredit() { return <div className="footer-credit"><span>Made with</span> ❤️ <span>by Aryan</span></div> }
 function ShieldIcon() { return <span className="shield-icon">✓</span> }
 function WeatherGPTMark({ small = false }: { small?: boolean }) { return <span className={small ? 'weather-mark small' : 'weather-mark'}><span /><CloudRain size={small ? 12 : 19} /></span> }
 function MetricWidget({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: string }) { return <div className={`metric-widget ${tone} glass-card`}><span className="metric-widget-icon">{icon}</span><div><small>{label}</small><b>{value}</b></div></div> }

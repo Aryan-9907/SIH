@@ -23,6 +23,14 @@ app.post('/api/chat', async (request, response) => {
 
   if (!openai) {
     const context = weather as { summary?: string; temperature?: number; feelsLike?: number; humidity?: number; wind?: number; aqi?: number; forecast?: Array<{ day: string; high: number; low: number; rain: number }> }
+    const questionText = (question ?? '').toLowerCase()
+    const isWeatherQuestion = /(weather|forecast|rain|temperature|humidity|wind|cloud|sunny|storm|umbrella|aqi|pressure|visibility|today|tomorrow|weekend|next\s+\d+\s*(day|days|hour|hours))/i.test(questionText)
+
+    if (!isWeatherQuestion) {
+      response.json({ answer: `I can help with weather questions for ${location}. Ask about today, rain, wind, humidity, or the next 7-day forecast.`, source: 'WeatherGPT Demo AI' })
+      return
+    }
+
     const tomorrow = context.forecast?.[1]
     const answer = `For ${location}: ${context.summary ?? 'Weather information is available.'} Current temperature is ${context.temperature ?? 'unavailable'}° and feels like ${context.feelsLike ?? 'unavailable'}°. ${tomorrow ? `Tomorrow has a ${tomorrow.rain}% chance of rain, with a high of ${tomorrow.high}° and low of ${tomorrow.low}°. ` : ''}Humidity is ${context.humidity ?? 'unavailable'}%, wind is ${context.wind ?? 'unavailable'} km/h, and AQI is ${context.aqi ?? 'unavailable'}.`
     response.json({ answer, source: 'WeatherGPT Demo AI' })
