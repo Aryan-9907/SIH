@@ -770,7 +770,6 @@ const InsightsTab = memo(function InsightsTab({ weather }: { weather: WeatherSna
   }, [selectedRangeDays, weather])
 
   const avgHigh = Math.round(rangeInsightData.reduce((sum, point) => sum + point.high, 0) / Math.max(1, rangeInsightData.length))
-  const avgLow = Math.round(rangeInsightData.reduce((sum, point) => sum + point.low, 0) / Math.max(1, rangeInsightData.length))
   const avgRain = Math.round(rangeInsightData.reduce((sum, point) => sum + point.rain, 0) / Math.max(1, rangeInsightData.length))
   const avgComfort = Math.round(rangeInsightData.reduce((sum, point) => sum + point.comfort, 0) / Math.max(1, rangeInsightData.length))
 
