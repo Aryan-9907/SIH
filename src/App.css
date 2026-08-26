@@ -238,13 +238,19 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+
+  /* Give the conversation a little more breathing room */
+  padding-bottom: 20px;
 }
 
-/* Keep recommendations and input inside the viewport */
+/* Keep recommendations and input inside the viewport,
+   but give them a little more space from the conversation */
 .mobile-main.ask-active .recommendations {
   flex-shrink: 0;
+  margin-top: 12px;
 }
 
 .mobile-main.ask-active .ask-composer {
   flex-shrink: 0;
+  margin-top: 8px;
 }
