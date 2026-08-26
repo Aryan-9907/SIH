@@ -542,7 +542,7 @@ function App() {
     </header>
 
     <main className={tab === 'ask' ? 'mobile-main ask-active' : 'mobile-main'}>
-      <div className="location-bar centered-location">
+      {tab === 'weather' && <div className="location-bar centered-location">
         <button className="location-trigger" onClick={() => setLocationOpen(!locationOpen)}>
           <LocateFixed size={16} />
           <span>{location}, India</span>
@@ -573,7 +573,7 @@ function App() {
           </div>
           {locationQuery && <button className="apply-location" onClick={() => selectLocation(locationQuery)}>View weather for “{locationQuery}” <Search size={14} /></button>}
         </div>}
-      </div>
+      </div>}
 
       {tab === 'weather' && <WeatherTab weather={weather} quote={quote} onAsk={openAskTab} />}
       {tab === 'ask' && <AskTab messages={messages} question={question} setQuestion={setQuestion} typing={typing} ask={ask} weather={weather} onMicClick={startVoiceInput} onStopMic={stopVoiceInput} t={t} />}
