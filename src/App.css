@@ -209,10 +209,10 @@
 .weather-mark { position:relative; display:grid; place-items:center; width:43px; height:43px; flex:none; color:#07273d; border-radius:15px; background:linear-gradient(135deg,#b5f4ee 0%,#70d7ee 48%,#77aef7 100%); box-shadow:0 7px 20px rgba(95,206,229,.22); }.weather-mark span { position:absolute; width:28px; height:11px; border:1px solid rgba(7,39,61,.32); border-left-color:transparent; border-right-color:transparent; border-radius:50%; transform:rotate(-27deg); }.weather-mark.small { width:24px; height:24px; border-radius:8px; box-shadow:none; }.weather-mark.small span { width:16px; height:7px; }.ai-heading { padding:8px 0 23px; gap:11px; }.ai-heading h1 { margin:0; font-size:25px; }.ai-subtitle { color:var(--muted); font-size:10px; margin-top:5px; }.ai-location { margin-left:auto; display:flex; align-items:center; gap:4px; color:var(--cyan); font:9px 'DM Mono',monospace; }.conversation { padding-top:18px; }.bubble-avatar:has(.weather-mark) { width:24px; height:24px; background:transparent; }.recommendations { margin-top:7px; }.recommendation-title { color:var(--muted); font-size:11px; margin:0 0 9px 2px; }.recommendation-scroll { display:flex; gap:8px; overflow-x:auto; padding:1px 1px 4px; scrollbar-width:none; }.recommendation-scroll::-webkit-scrollbar { display:none; }.recommendations button { width:auto; flex:none; margin:0; border-radius:13px; padding:10px 12px; background:rgba(61,113,153,.15); border-color:rgba(146,210,235,.17); white-space:nowrap; }.recommendations button:hover { border-color:rgba(128,228,237,.55); background:rgba(128,228,237,.12); }.recommendations button svg { color:var(--cyan); }
 
 /* =========================================================
-   ASK AI — NO OUTER VERTICAL PAGE SCROLL
-   Only the conversation area is allowed to scroll.
+   ASK AI — MOBILE LAYOUT REFINEMENT
+   The conversation gets the available vertical space while
+   recommendations and composer stay close together.
    ========================================================= */
-
 .mobile-main.ask-active {
   height: 100dvh;
   min-height: 0;
@@ -230,7 +230,6 @@
   flex-direction: column;
 }
 
-/* Only the conversation/messages area scrolls */
 .mobile-main.ask-active .conversation {
   flex: 1;
   min-height: 0;
@@ -238,19 +237,17 @@
   overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-
-  /* Give the conversation a little more breathing room */
-  padding-bottom: 20px;
+  padding-bottom: 8px;
 }
 
-/* Keep recommendations and input inside the viewport,
-   but give them a little more space from the conversation */
 .mobile-main.ask-active .recommendations {
   flex-shrink: 0;
-  margin-top: 12px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .mobile-main.ask-active .ask-composer {
   flex-shrink: 0;
   margin-top: 8px;
+  margin-bottom: 8px;
 }
