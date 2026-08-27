@@ -12,37 +12,28 @@
 
 ---
 
-## About This Project
+## 🌤️ About This Project
 
-**WeatherGPT** is an AI-first conversational weather intelligence platform developed as a **vibe-coded prototype for Smart India Hackathon 2026 — Problem Statement 26068**.
+**WeatherGPT** is an AI-first conversational weather platform developed as a **vibe-coded prototype for Smart India Hackathon 2026 — Problem Statement 26068**.
 
-The project addresses the problem of weather information being spread across different sources and interfaces by providing a single conversational interface where users can ask questions about current conditions, forecasts, rainfall, wind, weather safety, and everyday planning.
+Instead of simply displaying weather numbers, WeatherGPT lets users **ask questions about the weather in natural language** and receive contextual explanations using structured weather data.
 
-Unlike a traditional weather application that primarily displays weather values, **WeatherGPT allows users to ask questions in natural language and receive contextual explanations based on structured weather data.**
+The platform brings together 🌡️ weather data, 🤖 conversational AI, 📍 location intelligence, 📊 forecasts & insights, 🚨 safety information, 🗺️ maps, 🇮🇳 multilingual UI, 🎙️ voice input, and 📱 Android support in one polished experience.
 
-The application combines weather data retrieval, conversational AI, location search, forecasts, weather insights, safety information, interactive maps, multilingual UI, voice input, and Android packaging into one platform.
-
-This project was built with **AI-assisted / vibe-coded development**, with the goal of rapidly prototyping and refining a polished SIH-ready product experience.
+Development was accelerated using **AI-assisted / vibe-coded development** to rapidly prototype, test and refine the application.
 
 ---
 
 ## 🎯 Smart India Hackathon
 
-**Problem Statement ID:** 26068
+**Problem Statement:** `26068` — *WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information*
 
-**Problem Statement:**  
-**WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information**
+🏛️ **Organization:** Ministry of Earth Sciences (MoES)  
+🌦️ **Department:** India Meteorological Department (IMD)  
+💻 **Category:** Software  
+🚨 **Theme:** Disaster Management
 
-**Organization:** Ministry of Earth Sciences (MoES)
-
-**Department:** India Meteorological Department (IMD)
-
-**Category:** Software
-
-**Theme:** Disaster Management
-
-Official problem statement:
-
+🔗 **Official Problem Statement:**  
 https://sih.gov.in/sih2026PS
 
 ---
@@ -50,244 +41,130 @@ https://sih.gov.in/sih2026PS
 ## ✨ Features
 
 ### 🤖 Conversational Weather AI
+Ask questions naturally instead of navigating through multiple weather screens.
 
-- Ask natural-language questions about weather
-- ChatGPT-style conversational interface
-- Weather-aware responses
-- Weather context is supplied to the AI backend
-- Suggested questions for quick interaction
-- Weather information and AI explanation are presented separately
-- Fallback responses when the AI service is unavailable
+💬 Natural-language weather queries • 🧠 Weather-aware AI context • 💡 Suggested questions • 🌦️ Forecast explanations • 🗣️ Conversational responses • 🛡️ Fallback responses when AI is unavailable
 
 Example questions:
 
-- "Will it rain tomorrow?"
-- "Explain today's weather simply"
-- "What should I wear?"
-- "Best time for planting crops this week?"
-- "How is my day looking?"
+> 🌧️ *"Will it rain tomorrow?"*  
+> 👕 *"What should I wear today?"*  
+> 🌾 *"Is this week suitable for planting crops?"*  
+> ☀️ *"Explain today's weather simply."*
 
 ---
 
-### 🌡️ Current Weather
+### 🌡️ Weather Dashboard
 
-View detailed weather conditions for the selected location:
+Get a detailed snapshot of the selected location:
 
-- 🌡️ Temperature
-- 🤗 Feels-like temperature
-- 💧 Humidity
-- 💨 Wind speed
-- 🧭 Wind direction
-- 📊 Atmospheric pressure
-- 👁️ Visibility
-- 🌫️ Air Quality Index
-- 🌅 Sunrise
-- 🌇 Sunset
-- 🌧️ Precipitation probability
+🌡️ Temperature • 🤗 Feels-like • 💧 Humidity • 💨 Wind • 🧭 Wind direction • 📊 Pressure • 👁️ Visibility • 🌫️ AQI • 🌅 Sunrise & sunset • 🌧️ Rain probability
 
 ---
 
-### ⏱️ Hourly & 7-Day Forecast
+### ⏰ Forecasts
 
-WeatherGPT provides:
+📅 **7-Day Forecast** • 🕐 **Hourly Forecast** • 🌡️ Daily highs & lows • 🌧️ Precipitation probability • 💨 Wind conditions • ☁️ Weather conditions
 
-- Hourly weather timeline
-- 7-day forecast
-- Daily temperature highs and lows
-- Rain probability
-- Wind information
-- Weather conditions throughout the day
+🔄 Weather data automatically refreshes approximately every **7 seconds**, while a change-detection guard helps prevent unnecessary UI updates.
 
 ---
 
-### 🔄 Automatic Weather Refresh
+### 📍 Location Intelligence
 
-Weather information automatically refreshes approximately every **7 seconds**.
+Search and switch between locations using city search and geocoding.
 
-The application also uses a meaningful-change check so that unchanged weather data does not unnecessarily trigger large UI updates.
-
-This keeps the weather information fresh while reducing unnecessary rendering and mobile scrolling lag.
-
----
-
-### 📍 Location Search
-
-Users can change the active weather location through:
-
-- City search
-- Popular Indian cities
-- Open-Meteo geocoding
-- Location-based weather retrieval
-
-Demo locations include:
-
-- Bhilai
-- Raipur
-- Delhi
-- Mumbai
-- Kolkata
-- Chennai
-- Bengaluru
-- Hyderabad
-- Pune
-- Jaipur
-- Ahmedabad
-- Lucknow
-
-The location selection interface is kept on the main Weather dashboard rather than appearing throughout every tab.
+🇮🇳 Demo locations include: **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and more.
 
 ---
 
 ### 🗺️ Interactive Weather Map
 
-The Map section uses **Leaflet + OpenStreetMap**.
+Powered by **Leaflet + OpenStreetMap**.
 
-Available views include:
-
-- 🌡️ Temperature
-- 💨 Wind
-- 💧 Humidity
-
-The map displays the selected location and its current weather context.
+🌡️ Temperature view • 💨 Wind view • 💧 Humidity view • 📍 Selected-location mapping
 
 ---
 
 ### 🚨 Weather Safety Center
 
-The Safety Center provides a dedicated interface for weather-related warnings and safety guidance.
+A dedicated space for weather warnings and safety information.
 
-It includes:
+⚠️ Alert severity • 📍 Affected area • ⏱️ Timing • 📝 Warning description • 🛡️ Safety guidance • 📞 Emergency-services access
 
-- Alert severity
-- Alert title
-- Affected location
-- Timing
-- Warning description
-- Safety recommendations
-- Emergency-services access
+> For critical situations, users should always follow official authorities and emergency instructions.
 
-The application also provides access to India's emergency number **108**.
-
-For critical weather situations, users are reminded to follow official authorities rather than relying solely on AI-generated explanations.
-
-> **Note:** The current prototype does not directly integrate live IMD warning feeds. The safety/alert interface is implemented as part of the prototype and is ready to be connected to an official warning source in the future.
+**Note:** Live IMD warning-feed integration is planned for a future version.
 
 ---
 
 ### 📊 Weather & Climate Insights
 
-The Insights section provides visual weather analysis across selectable ranges:
+Explore weather patterns across:
 
-- 1 Day
-- 3 Days
-- 7 Days
-- 15 Days
-- 30 Days
+`1D` • `3D` • `7D` • `15D` • `30D`
 
-It includes:
+📈 Temperature • 🌧️ Rain expectancy • 💧 Humidity • 💨 Wind • 📊 Pressure • 😊 Comfort index • 🔎 Pattern summaries
 
-- Average temperature
-- Rain expectancy
-- Humidity
-- Wind
-- Pressure
-- Comfort index
-- Visual trend charts
-- Weather pattern summaries
-
-The current prototype derives these insight series from the available weather/forecast context.
-
-It does **not** currently connect to a long-term historical climate database.
+> Current insights are derived from available weather/forecast data. Long-term historical climate datasets are not yet integrated.
 
 ---
 
 ### 🇮🇳 Multilingual Interface
 
-The interface supports multiple Indian languages:
+🌐 **English, Hindi, Bengali, Marathi, Tamil, Telugu, Gujarati, Punjabi & Malayalam**
 
-- 🇬🇧 English
-- 🇮🇳 Hindi
-- Bengali
-- Marathi
-- Tamil
-- Telugu
-- Gujarati
-- Punjabi
-- Malayalam
-
-The selected language is stored locally so the user's preference can persist between sessions.
+The current implementation provides multilingual UI support and language-aware voice input.
 
 ---
 
 ### 🎙️ Voice Input
 
-WeatherGPT supports browser-based speech recognition for voice-to-text queries.
+Ask WeatherGPT using browser-based speech recognition.
 
-Supported speech locales include Indian language variants such as:
+🎤 Speech-to-text • 🇮🇳 Indian language locales • 🗣️ Natural voice queries
 
-- `en-IN`
-- `hi-IN`
-- `bn-IN`
-- `mr-IN`
-- `ta-IN`
-- `te-IN`
-- `gu-IN`
-- `pa-IN`
-- `ml-IN`
-
-> Voice interaction currently provides **speech-to-text input**. Voice-generated AI responses / text-to-speech are not currently implemented.
+> Voice input is implemented; AI voice responses / text-to-speech are planned for the future.
 
 ---
 
 ### 🧪 Demo Mode
 
-WeatherGPT can operate without API keys using clearly labelled **Demo Mode** data.
+No API keys? No problem.
 
-This makes the application suitable for:
+WeatherGPT includes a clearly labelled **Demo Mode** with realistic demonstration weather data.
 
-- Hackathon demonstrations
-- UI testing
-- Development without API credentials
-- Exploring the complete interface
+Perfect for:
 
-Demo data is clearly identified rather than being presented as live meteorological data.
+🎤 SIH presentations • 🧪 Testing • 💻 Development • 📱 App demonstrations
+
+**Demo data is never presented as live weather.**
 
 ---
 
 ### 🌐 Live Weather Data
 
-The weather service is modular and can retrieve live weather information.
+The weather layer is modular and currently supports **Open-Meteo** for live weather retrieval.
 
-The current implementation integrates:
+It can provide:
 
-**Open-Meteo**
+🌡️ Current weather • 🕐 Hourly forecasts • 📅 Daily forecasts • 🌧️ Precipitation probability • 💧 Humidity • 💨 Wind • 📊 Pressure • 👁️ Visibility • 🌅 Sunrise/sunset • 🌫️ Air quality
 
-The weather service can retrieve information including:
-
-- Current weather
-- Hourly forecasts
-- Daily forecasts
-- Precipitation probability
-- Humidity
-- Wind
-- Pressure
-- Visibility
-- Sunrise/sunset
-- Air quality
-
-The weather provider is isolated inside the weather service so it can be replaced or extended later.
+The weather service is separated from the UI, making future API replacements easier.
 
 ---
 
 ### 🔐 Secure AI Architecture
 
-The AI API key is not exposed in the frontend.
-
-The application uses:
+The OpenAI API key is kept on the **server**, not exposed inside the frontend.
 
 ```text
+User Question
+      ↓
 React Frontend
       ↓
 Express Backend
       ↓
 OpenAI API
+      ↓
+WeatherGPT Response
