@@ -1,6 +1,4 @@
-# WeatherGPT 🌦️🤖
-
-**Conversational AI Weather Intelligence Platform** built with React, TypeScript & Node.js.
+**Conversational AI Weather Intelligence Platform** built with React, TypeScript & Node.js
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=20232A)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
@@ -12,50 +10,19 @@
 
 ---
 
-## 🚀 Try WeatherGPT
+## 🌤️ About This Project
 
-🌐 **Live Web App:** *Add your deployed website link here*
+**WeatherGPT** is an AI-first conversational weather platform developed as a **vibe-coded prototype for Smart India Hackathon 2026 -Problem Statement 26068**.
 
-📱 **Android APK:**  
-https://github.com/Aryan-9907/SIH/actions/runs/33048750271
+Instead of simply displaying weather numbers, WeatherGPT lets users **ask questions about the weather in natural language** and receive contextual explanations using live, structured weather data.
 
-The latest GitHub Actions build contains the Android APK for testing.
+The platform brings together 🌡️ live weather data, 🤖 conversational AI, 📍 location intelligence, 📊 forecasts & insights, 🚨 safety information, 🗺️ maps, 🇮🇳 multilingual UI, 🎙️ voice input, and 📱 Android support in one polished experience.
 
----
-
-## 🌤️ About WeatherGPT
-
-**WeatherGPT** is an AI-first conversational weather platform developed for **Smart India Hackathon 2026 — Problem Statement 26068**.
-
-Traditional weather apps primarily present numbers, charts and forecasts. WeatherGPT goes a step further by allowing users to **ask questions about weather in natural language** and receive contextual, easy-to-understand answers based on structured weather data.
-
-The platform combines 🌡️ live weather data, 🤖 conversational AI, 📍 location intelligence, 📊 forecasts & insights, 🚨 safety information, 🗺️ interactive maps, 🇮🇳 multilingual support, 🎙️ voice input and 📱 Android support in one experience.
-
-The project was developed using **AI-assisted engineering and rapid prototyping workflows** to quickly build, test and refine the platform.
+Development was accelerated using **AI-assisted / vibe-coded development** to rapidly prototype, test and refine the application.
 
 ---
 
-## 🎯 Why WeatherGPT?
-
-Weather information is often scattered across dashboards, charts, alerts and multiple screens.
-
-WeatherGPT turns that information into **conversational, contextual and actionable weather intelligence**.
-
-Instead of interpreting multiple weather values, users can simply ask:
-
-> 🌧️ *"Will it rain tomorrow?"*
-
-> 🌾 *"Is this week suitable for planting crops?"*
-
-> 🚨 *"What should I do during this weather alert?"*
-
-> 🗣️ *"Explain today's weather in Hindi."*
-
-The goal is to make weather information **easier to understand, more accessible and more useful in everyday decisions**.
-
----
-
-## 🎯 Smart India Hackathon 2026
+## 🎯 Smart India Hackathon
 
 **Problem Statement:** `26068` — *WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information*
 
@@ -73,11 +40,16 @@ https://sih.gov.in/sih2026PS
 
 ### 🤖 Conversational Weather AI
 
-Ask weather questions naturally instead of navigating through multiple screens.
+Ask questions naturally instead of navigating through multiple weather screens.
 
-💬 Natural-language queries • 🧠 Weather-aware context • 💡 Suggested questions • 🌦️ Forecast explanations • 🗣️ Conversational responses • 🛡️ Fallback responses
+• 💬 Natural-language weather queries 
+• 🧠 Weather-aware AI context 
+• 💡 Suggested questions 
+• 🌦️ Forecast explanations 
+• 🗣️ Conversational responses 
+• 🛡️ Fallback responses when AI is unavailable
 
-**Example queries:**
+Example questions:
 
 > 🌧️ *"Will it rain tomorrow?"*  
 > 👕 *"What should I wear today?"*  
@@ -86,19 +58,33 @@ Ask weather questions naturally instead of navigating through multiple screens.
 
 ---
 
-### 🌡️ Live Weather Dashboard
+### 🌡️ Weather Dashboard
 
-Get a detailed snapshot of the selected location using live weather data.
+Get a detailed snapshot of the selected location using live weather data:
 
-🌡️ Temperature • 🤗 Feels-like • 💧 Humidity • 💨 Wind • 🧭 Wind direction • 📊 Pressure • 👁️ Visibility • 🌫️ AQI • 🌅 Sunrise & sunset • 🌧️ Rain probability
+• 🌡️ Temperature 
+• 🤗 Feels-like 
+• 💧 Humidity 
+• 💨 Wind 
+• 🧭 Wind direction 
+• 📊 Pressure 
+• 👁️ Visibility 
+• 🌫️ AQI 
+• 🌅 Sunrise & sunset 
+• 🌧️ Rain probability
 
 ---
 
 ### ⏰ Forecasts
 
-📅 **7-Day Forecast** • 🕐 **Hourly Forecast** • 🌡️ Daily highs & lows • 🌧️ Precipitation probability • 💨 Wind conditions • ☁️ Weather conditions
+• 📅 **7-Day Forecast** 
+• 🕐 **Hourly Forecast** 
+• 🌡️ Daily highs & lows 
+• 🌧️ Precipitation probability 
+• 💨 Wind conditions 
+• ☁️ Weather conditions
 
-🔄 Weather data automatically refreshes approximately every **7 seconds**, with change detection used to avoid unnecessary UI updates.
+🔄 Weather data automatically refreshes approximately every **7 seconds**, while a change-detection guard helps prevent unnecessary UI updates.
 
 ---
 
@@ -106,7 +92,7 @@ Get a detailed snapshot of the selected location using live weather data.
 
 Search and switch between locations using city search and geocoding.
 
-🇮🇳 **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more.
+🇮🇳 Locations can include **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more...
 
 ---
 
@@ -114,7 +100,10 @@ Search and switch between locations using city search and geocoding.
 
 Powered by **Leaflet + OpenStreetMap**.
 
-🌡️ Temperature • 💨 Wind • 💧 Humidity • 📍 Location mapping
+• 🌡️ Temperature view 
+• 💨 Wind view 
+• 💧 Humidity view 
+• 📍 Selected-location mapping
 
 ---
 
@@ -126,29 +115,27 @@ A dedicated space for weather warnings and safety information.
 
 > For critical situations, users should always follow official authorities and emergency instructions.
 
-**Current status:** Live IMD warning-feed integration is planned for a future version.
+**Note:** Live IMD warning-feed integration is planned for a future version.
 
 ---
 
 ### 📊 Weather & Climate Insights
 
-Explore available weather patterns across:
+Explore weather patterns across:
 
 `1D` • `3D` • `7D` • `15D` • `30D`
 
 📈 Temperature • 🌧️ Rain expectancy • 💧 Humidity • 💨 Wind • 📊 Pressure • 😊 Comfort index • 🔎 Pattern summaries
 
-> Current insights are derived from available live weather and forecast data. Long-term historical climate datasets are not yet integrated.
+> Current insights are derived from available live weather/forecast data. Long-term historical climate datasets are not yet integrated.
 
 ---
 
 ### 🇮🇳 Multilingual Interface
 
-Support for:
+🌐 **English, Hindi, Bengali, Marathi, Tamil, Telugu, Gujarati, Punjabi & Malayalam**
 
-🇬🇧 English • 🇮🇳 Hindi • 🇮🇳 Bengali • 🇮🇳 Marathi • 🇮🇳 Tamil • 🇮🇳 Telugu • 🇮🇳 Gujarati • 🇮🇳 Punjabi • 🇮🇳 Malayalam
-
-The implementation includes multilingual UI support and language-aware voice input.
+The current implementation provides multilingual UI support and language-aware voice input.
 
 ---
 
@@ -158,46 +145,46 @@ Ask WeatherGPT using browser-based speech recognition.
 
 🎤 Speech-to-text • 🇮🇳 Indian language locales • 🗣️ Natural voice queries
 
-> Voice input is implemented. AI voice responses / text-to-speech are planned for a future version.
+> Voice input is implemented; AI voice responses / text-to-speech are planned for the future.
 
 ---
 
-## 🌐 Live Weather Data
+### 🌐 Live Weather Data
 
 WeatherGPT currently uses **Open-Meteo** for live weather and forecast retrieval.
 
-Available data includes:
+It can provide:
 
 🌡️ Current weather • 🕐 Hourly forecasts • 📅 Daily forecasts • 🌧️ Precipitation probability • 💧 Humidity • 💨 Wind • 📊 Pressure • 👁️ Visibility • 🌅 Sunrise/sunset • 🌫️ Air quality
 
-The weather service is separated from the UI, making future weather-provider integrations easier.
+The weather service is separated from the UI, making future API replacements easier.
 
-> **Weather values displayed by WeatherGPT are intended to come from live weather and forecast data rather than hard-coded demonstration data.**
+**Weather values shown by the application are intended to come from live weather/forecast data rather than hard-coded demonstration weather.**
 
 ---
 
-## 📱 Android Application
+## 📱 Android APK
 
-WeatherGPT is packaged as an Android application using **Capacitor**.
+WeatherGPT is also packaged as an Android application using **Capacitor**.
 
-🚀 **Latest APK Build:**  
+🚀 **Latest APK build:**  
 https://github.com/Aryan-9907/SIH/actions/runs/33048750271
 
-The GitHub Actions workflow provides the latest Android build artifact for testing.
+The GitHub Actions run contains the current Android build artifact for testing.
 
 ---
 
 ## 🔐 Secure AI Architecture
 
-The OpenAI API key is kept on the **server** and is not exposed in the frontend.
+The OpenAI API key is kept on the **server**, not exposed inside the frontend.
 
 ```text
-User
-  ↓
+User Question
+      ↓
 React Frontend
-  ↓
+      ↓
 Express Backend
-  ↓
+      ↓
 OpenAI API
-  ↓
+      ↓
 WeatherGPT Response
