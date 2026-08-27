@@ -1,3 +1,5 @@
+# WeatherGPT 🌦️
+
 **Conversational AI Weather Intelligence Platform** built with React, TypeScript & Node.js
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=20232A)
