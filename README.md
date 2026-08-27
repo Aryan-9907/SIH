@@ -94,7 +94,7 @@ Get a detailed snapshot of the selected location using live weather data:
 
 Search and switch between locations using city search and geocoding.
 
-🇮🇳 Locations can include **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more...
+🇮🇳 Locations include **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more...
 
 ---
 
