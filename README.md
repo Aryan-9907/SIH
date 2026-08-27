@@ -44,7 +44,12 @@ https://sih.gov.in/sih2026PS
 
 Ask questions naturally instead of navigating through multiple weather screens.
 
-💬 Natural-language weather queries • 🧠 Weather-aware AI context • 💡 Suggested questions • 🌦️ Forecast explanations • 🗣️ Conversational responses • 🛡️ Fallback responses when AI is unavailable
+• 💬 Natural-language weather queries 
+• 🧠 Weather-aware AI context 
+• 💡 Suggested questions 
+• 🌦️ Forecast explanations 
+• 🗣️ Conversational responses 
+• 🛡️ Fallback responses when AI is unavailable
 
 Example questions:
 
@@ -59,13 +64,27 @@ Example questions:
 
 Get a detailed snapshot of the selected location using live weather data:
 
-🌡️ Temperature • 🤗 Feels-like • 💧 Humidity • 💨 Wind • 🧭 Wind direction • 📊 Pressure • 👁️ Visibility • 🌫️ AQI • 🌅 Sunrise & sunset • 🌧️ Rain probability
+• 🌡️ Temperature 
+• 🤗 Feels-like 
+• 💧 Humidity 
+• 💨 Wind 
+• 🧭 Wind direction 
+• 📊 Pressure 
+• 👁️ Visibility 
+• 🌫️ AQI 
+• 🌅 Sunrise & sunset 
+• 🌧️ Rain probability
 
 ---
 
 ### ⏰ Forecasts
 
-📅 **7-Day Forecast** • 🕐 **Hourly Forecast** • 🌡️ Daily highs & lows • 🌧️ Precipitation probability • 💨 Wind conditions • ☁️ Weather conditions
+• 📅 **7-Day Forecast** 
+• 🕐 **Hourly Forecast** 
+• 🌡️ Daily highs & lows 
+• 🌧️ Precipitation probability 
+• 💨 Wind conditions 
+• ☁️ Weather conditions
 
 🔄 Weather data automatically refreshes approximately every **7 seconds**, while a change-detection guard helps prevent unnecessary UI updates.
 
@@ -75,7 +94,7 @@ Get a detailed snapshot of the selected location using live weather data:
 
 Search and switch between locations using city search and geocoding.
 
-🇮🇳 Locations can include **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more.
+🇮🇳 Locations can include **Bhilai, Raipur, Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Jaipur, Ahmedabad, Lucknow** and many more...
 
 ---
 
@@ -83,7 +102,10 @@ Search and switch between locations using city search and geocoding.
 
 Powered by **Leaflet + OpenStreetMap**.
 
-🌡️ Temperature view • 💨 Wind view • 💧 Humidity view • 📍 Selected-location mapping
+• 🌡️ Temperature view 
+• 💨 Wind view 
+• 💧 Humidity view 
+• 📍 Selected-location mapping
 
 ---
 
