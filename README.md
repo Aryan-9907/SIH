@@ -14,7 +14,7 @@
 
 ## 🌤️ About This Project
 
-**WeatherGPT** is an AI-first conversational weather platform developed as a **vibe-coded prototype for Smart India Hackathon 2026 -->Problem Statement 26068**.
+**WeatherGPT** is an AI-first conversational weather platform developed as a **vibe-coded prototype for Smart India Hackathon 2026 -Problem Statement 26068**.
 
 Instead of simply displaying weather numbers, WeatherGPT lets users **ask questions about the weather in natural language** and receive contextual explanations using live, structured weather data.
 
