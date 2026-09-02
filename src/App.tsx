@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, BarChart3, Bell, CloudDrizzle, CloudRain, Droplets, Gauge, LocateFixed, Map as MapIcon, Mic, Moon, Navigation, Search, Send, Sparkles, Sun, Thermometer, Wind } from 'lucide-react'
+import { AlertTriangle, BarChart3, Bell, CloudDrizzle, CloudRain, Droplets, Gauge, Info, LocateFixed, Map as MapIcon, Mic, Moon, Navigation, Search, Send, Sparkles, Sun, Thermometer, Wind } from 'lucide-react'
 import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 import { buildDateRangeOptions, buildHourlyTimeline, formatWeatherDateLabel, getWeatherData, getWeatherSnapshot, isWeatherQuestion, searchCities, type WeatherSnapshot } from './services/weatherService'
 
-type Tab = 'weather' | 'ask' | 'alerts' | 'map' | 'insights'
+type Tab = 'weather' | 'alerts' | 'ask' | 'map' | 'insights' | 'about'
+const TABS: Tab[] = ['weather', 'alerts', 'ask', 'map', 'insights', 'about']
 type Message = { role: 'assistant' | 'user'; text: string; data?: string }
 type LanguageCode = 'en' | 'hi' | 'bn' | 'mr' | 'ta' | 'te' | 'gu' | 'pa' | 'ml'
 
@@ -20,6 +21,7 @@ type TranslationSet = {
   alertsTab: string
   mapTab: string
   insightsTab: string
+  aboutTab: string
   exploreQuestion: string
   useVoice: string
   languageTitle: string
@@ -32,6 +34,29 @@ type TranslationSet = {
     rain: string
     day: string
   }
+}
+
+type AboutCopy = {
+  title: string
+  mission: string
+  missionText: string
+  missionDetails?: string
+  whatWeDo: string
+  doItems: string[]
+  keyFeatures: string
+  featureItems: string[]
+  approach: string
+  approachQuote: string
+  approachText: string
+  development: string
+  developmentText: string
+  hackathon: string
+  problemStatement: string
+  organization: string
+  department: string
+  category: string
+  theme: string
+  tagline: string
 }
 
 const recommendations = [
@@ -69,6 +94,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'Alerts',
     mapTab: 'Map',
     insightsTab: 'Insights',
+    aboutTab: 'About',
     exploreQuestion: 'Explore a question',
     useVoice: 'Speak',
     languageTitle: 'Choose your language',
@@ -93,6 +119,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'अलर्ट',
     mapTab: 'मानचित्र',
     insightsTab: 'इनसाइट्स',
+    aboutTab: 'परिचय',
     exploreQuestion: 'प्रश्न चुनें',
     useVoice: 'बोलें',
     languageTitle: 'अपनी भाषा चुनें',
@@ -117,6 +144,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'সতর্কতা',
     mapTab: 'মানচিত্র',
     insightsTab: 'ইনসাইটস',
+    aboutTab: 'সম্পর্কে',
     exploreQuestion: 'একটি প্রশ্ন বেছে নিন',
     useVoice: 'কথুন',
     languageTitle: 'আপনার ভাষা নির্বাচন করুন',
@@ -141,6 +169,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'अलर्ट',
     mapTab: 'नकाशा',
     insightsTab: 'इन्साइट्स',
+    aboutTab: 'बद्दल',
     exploreQuestion: 'प्रश्न निवडा',
     useVoice: 'बोलणे',
     languageTitle: 'तुमची भाषा निवडा',
@@ -165,6 +194,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'எச்சரிக்கைகள்',
     mapTab: 'வரைபடம்',
     insightsTab: 'உணர்வுகள்',
+    aboutTab: 'பற்றி',
     exploreQuestion: 'ஒரு கேள்வியை தேர்வு செய்யுங்கள்',
     useVoice: 'பேசுங்கள்',
     languageTitle: 'உங்கள் மொழியை தேர்ந்தெடுக்கவும்',
@@ -189,6 +219,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'అలర్ట్లు',
     mapTab: 'మ్యాప్',
     insightsTab: 'ఇన్‌సైట్ల్',
+    aboutTab: 'గురించి',
     exploreQuestion: 'ప్రశ్నను ఎంచుకోండి',
     useVoice: 'మాట్లండి',
     languageTitle: 'మీ భాషను ఎంచుకోండి',
@@ -213,6 +244,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'ચેતણીઓ',
     mapTab: 'નકશો',
     insightsTab: 'ઇન્ઝાઇટ્સ',
+    aboutTab: 'વિશે',
     exploreQuestion: 'એક પ્રશ્ન પસંદ કરો',
     useVoice: 'બોલો',
     languageTitle: 'તમારી ભાષા પસંદ કરો',
@@ -237,6 +269,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'ਚੇਤਾਵਨੀਆਂ',
     mapTab: 'ਮੈਪ',
     insightsTab: 'ਇੰਸਾਈਟਸ',
+    aboutTab: 'ਬਾਰੇ',
     exploreQuestion: 'ਇੱਕ ਸਵਾਲ ਚੁਣੋ',
     useVoice: 'ਬੋਲੋ',
     languageTitle: 'ਆਪਣੀ ਭਾਸ਼ਾ ਚੁਣੋ',
@@ -261,6 +294,7 @@ const localeText: Record<LanguageCode, TranslationSet> = {
     alertsTab: 'അറിയിപ്പുകൾ',
     mapTab: 'മാപ്പ്',
     insightsTab: 'ഇൻസൈറ്റ്‌സ്',
+    aboutTab: 'ഏതുമായി',
     exploreQuestion: 'ഒരു ചോദ്യം തിരഞ്ഞെടുക്കുക',
     useVoice: 'സംസാരിക്കുക',
     languageTitle: 'നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക',
@@ -274,6 +308,53 @@ const localeText: Record<LanguageCode, TranslationSet> = {
       day: 'ഇന്ന് ദിവസമൊരു സമതുലിതമാണ്, മിതമായ കാറ്റും നന്നായി നിലനിൽക്കുന്ന താപനിലയും ഉണ്ടാകും.',
     },
   },
+}
+
+const aboutCopy: Record<LanguageCode, AboutCopy> = {
+  en: {
+    title: 'About WeatherGPT', mission: '🌤️ Our Mission',
+    missionText: 'is an AI-first conversational weather intelligence platform developed as a vibe-coded prototype for Smart India Hackathon 2026 — Problem Statement 26068.',
+    missionDetails: 'Instead of simply displaying weather numbers, WeatherGPT helps users understand what the weather means. Users can ask questions in natural language and receive contextual, weather-grounded information powered by live, structured weather data.',
+    whatWeDo: '🎯 What We Do',
+    doItems: ['🌦️ Understand — Turn complex weather information into clear, easy-to-understand insights.', '🤖 Ask — Ask weather questions naturally and get contextual AI-powered responses.', '📊 Analyze — Explore forecasts, trends, rainfall, humidity, pressure, temperature, and other weather insights.', '🚨 Act — Use weather alerts, safety information, and practical conditions to make better decisions.', '🗺️ Explore — Visualize weather information through interactive maps and location-based data.'],
+    keyFeatures: '✨ Key Features',
+    featureItems: ['🌡️ Live Weather Data — Current weather conditions and observations', '🤖 Conversational AI — Ask questions about weather in natural language', '📍 Location Intelligence — Explore weather across multiple locations', '📊 Forecasts & Insights — Hourly breakdowns and 7-day forecasts', '🚨 Weather Alerts — Important weather and safety information', '🗺️ Interactive Maps — Visualize weather conditions geographically', '🇮🇳 Multilingual UI — Interface available in 9 Indian languages', '🎙️ Voice Input — Speak your weather questions', '📱 Android Support — Mobile-first experience through a native Android build'],
+    approach: '🧠 Our Approach', approachQuote: "Don't just show the weather. Help people understand what it means.",
+    approachText: 'WeatherGPT combines weather data, conversational AI, visualizations, and contextual insights into a single platform designed to make meteorological information more accessible and useful.',
+    development: '🚀 Development', developmentText: 'Development was accelerated using AI-assisted / vibe-coded development to rapidly prototype, test, iterate, and refine the application.',
+    hackathon: '📋 Smart India Hackathon 2026', problemStatement: 'Problem Statement:', organization: 'Organization:', department: 'Department:', category: 'Category:', theme: 'Theme:',
+    tagline: 'WeatherGPT — Understand the weather. Make better decisions. 🌦️',
+  },
+  hi: {
+    title: 'वेदरजीपीटी के बारे में', mission: '🌤️ हमारा मिशन', missionText: 'एक AI-प्रथम संवादात्मक मौसम इंटेलिजेंस प्लेटफ़ॉर्म है, जिसे स्मार्ट इंडिया हैकाथॉन 2026 — समस्या विवरण 26068 के लिए वाइब-कोडेड प्रोटोटाइप के रूप में बनाया गया है।', missionDetails: 'सिर्फ मौसम के आंकड़े दिखाने के बजाय, वेदरजीपीटी लोगों को मौसम का अर्थ समझने में मदद करता है।', whatWeDo: '🎯 हम क्या करते हैं', doItems: ['🌦️ समझें — जटिल मौसम जानकारी को स्पष्ट और आसान जानकारी में बदलें।', '🤖 पूछें — मौसम के सवाल स्वाभाविक रूप से पूछें और संदर्भ सहित AI उत्तर पाएं।', '📊 विश्लेषण करें — पूर्वानुमान, रुझान, बारिश, नमी, दबाव, तापमान और अन्य जानकारी देखें।', '🚨 कार्रवाई करें — बेहतर निर्णयों के लिए मौसम चेतावनियों और सुरक्षा जानकारी का उपयोग करें।', '🗺️ खोजें — इंटरैक्टिव मानचित्रों और स्थान-आधारित डेटा से मौसम देखें।'], keyFeatures: '✨ मुख्य विशेषताएं', featureItems: ['🌡️ लाइव मौसम डेटा — वर्तमान मौसम स्थितियां और अवलोकन', '🤖 संवादात्मक AI — प्राकृतिक भाषा में मौसम के सवाल पूछें', '📍 स्थान इंटेलिजेंस — कई स्थानों का मौसम देखें', '📊 पूर्वानुमान और इनसाइट्स — प्रति घंटे जानकारी और 7 दिन का पूर्वानुमान', '🚨 मौसम अलर्ट — महत्वपूर्ण मौसम और सुरक्षा जानकारी', '🗺️ इंटरैक्टिव मानचित्र — भौगोलिक रूप से मौसम देखें', '🇮🇳 बहुभाषी UI — 9 भारतीय भाषाओं में इंटरफ़ेस', '🎙️ वॉइस इनपुट — मौसम के सवाल बोलकर पूछें', '📱 Android सहायता — नेटिव Android बिल्ड के साथ मोबाइल अनुभव'], approach: '🧠 हमारा दृष्टिकोण', approachQuote: 'सिर्फ मौसम न दिखाएं। लोगों को उसका अर्थ समझने में मदद करें।', approachText: 'वेदरजीपीटी मौसम डेटा, संवादात्मक AI, विज़ुअलाइज़ेशन और संदर्भपूर्ण जानकारी को एक प्लेटफ़ॉर्म में जोड़ता है।', development: '🚀 विकास', developmentText: 'ऐप का प्रोटोटाइप, परीक्षण और सुधार तेजी से करने के लिए AI-सहायित / वाइब-कोडेड विकास का उपयोग किया गया।', hackathon: '📋 स्मार्ट इंडिया हैकाथॉन 2026', problemStatement: 'समस्या विवरण:', organization: 'संगठन:', department: 'विभाग:', category: 'श्रेणी:', theme: 'विषय:', tagline: 'वेदरजीपीटी — मौसम समझें। बेहतर निर्णय लें। 🌦️',
+  },
+  bn: {
+    title: 'ওয়েদারজিপিটি সম্পর্কে', mission: '🌤️ আমাদের লক্ষ্য', missionText: 'ওয়েদারজিপিটি একটি AI-প্রথম কথোপকথনমূলক আবহাওয়া বুদ্ধিমত্তা প্ল্যাটফর্ম, যা স্মার্ট ইন্ডিয়া হ্যাকাথন ২০২৬ — সমস্যা বিবৃতি ২৬০৬৮-এর জন্য তৈরি একটি প্রোটোটাইপ।', whatWeDo: '🎯 আমরা কী করি', doItems: ['🌦️ বুঝুন — জটিল আবহাওয়ার তথ্যকে সহজ অন্তর্দৃষ্টিতে রূপান্তর করুন।', '🤖 জিজ্ঞাসা করুন — স্বাভাবিক ভাষায় প্রশ্ন করে প্রসঙ্গভিত্তিক AI উত্তর পান।', '📊 বিশ্লেষণ করুন — পূর্বাভাস, প্রবণতা, বৃষ্টি, আর্দ্রতা, চাপ ও তাপমাত্রা দেখুন।', '🚨 পদক্ষেপ নিন — ভালো সিদ্ধান্তের জন্য সতর্কতা ও নিরাপত্তা তথ্য ব্যবহার করুন।', '🗺️ অনুসন্ধান করুন — ইন্টার‌্যাক্টিভ মানচিত্রে আবহাওয়া দেখুন।'], keyFeatures: '✨ প্রধান বৈশিষ্ট্য', featureItems: ['🌡️ লাইভ আবহাওয়া তথ্য — বর্তমান অবস্থা ও পর্যবেক্ষণ', '🤖 কথোপকথনমূলক AI — স্বাভাবিক ভাষায় আবহাওয়া জিজ্ঞাসা', '📍 অবস্থান বুদ্ধিমত্তা — একাধিক স্থানের আবহাওয়া দেখুন', '📊 পূর্বাভাস ও ইনসাইটস — ঘণ্টাভিত্তিক ও ৭ দিনের পূর্বাভাস', '🚨 আবহাওয়া সতর্কতা — গুরুত্বপূর্ণ আবহাওয়া ও নিরাপত্তা তথ্য', '🗺️ ইন্টার‌্যাক্টিভ মানচিত্র — ভৌগোলিকভাবে আবহাওয়া দেখুন', '🇮🇳 বহুভাষিক UI — ৯টি ভারতীয় ভাষায় ইন্টারফেস', '🎙️ ভয়েস ইনপুট — কথা বলে প্রশ্ন করুন', '📱 Android সহায়তা — নেটিভ Android অভিজ্ঞতা'], approach: '🧠 আমাদের পদ্ধতি', approachQuote: 'শুধু আবহাওয়া দেখাবেন না। এর অর্থ বুঝতে সাহায্য করুন।', approachText: 'ওয়েদারজিপিটি আবহাওয়া তথ্য, কথোপকথনমূলক AI, ভিজ্যুয়ালাইজেশন ও প্রসঙ্গভিত্তিক অন্তর্দৃষ্টি একত্র করে।', development: '🚀 উন্নয়ন', developmentText: 'দ্রুত প্রোটোটাইপ, পরীক্ষা ও উন্নতির জন্য AI-সহায়িত / ভাইব-কোডেড উন্নয়ন ব্যবহার করা হয়েছে।', hackathon: '📋 স্মার্ট ইন্ডিয়া হ্যাকাথন ২০২৬', problemStatement: 'সমস্যা বিবৃতি:', organization: 'সংস্থা:', department: 'বিভাগ:', category: 'বিভাগ:', theme: 'বিষয়:', tagline: 'ওয়েদারজিপিটি — আবহাওয়া বুঝুন। আরও ভালো সিদ্ধান্ত নিন। 🌦️',
+  },
+  mr: {
+    title: 'वेदरजीपीटी बद्दल', mission: '🌤️ आमचे ध्येय', missionText: 'वेदरजीपीटी हे AI-प्रथम संवादात्मक हवामान बुद्धिमत्ता व्यासपीठ आहे, जे स्मार्ट इंडिया हॅकाथॉन २०२६ — समस्या विधान २६०६८ साठी प्रोटोटाइप म्हणून विकसित केले आहे.', whatWeDo: '🎯 आम्ही काय करतो', doItems: ['🌦️ समजून घ्या — गुंतागुंतीची हवामान माहिती सोप्या अंतर्दृष्टीत बदला.', '🤖 विचारा — नैसर्गिक भाषेत हवामानाचे प्रश्न विचारा आणि AI उत्तरे मिळवा.', '📊 विश्लेषण करा — अंदाज, पाऊस, आर्द्रता, दाब, तापमान आणि इतर माहिती पाहा.', '🚨 कृती करा — चांगले निर्णय घेण्यासाठी सूचना व सुरक्षा माहिती वापरा.', '🗺️ शोधा — परस्परसंवादी नकाशांवर हवामान पाहा.'], keyFeatures: '✨ मुख्य वैशिष्ट्ये', featureItems: ['🌡️ थेट हवामान माहिती — सध्याची स्थिती व निरीक्षणे', '🤖 संवादात्मक AI — नैसर्गिक भाषेत हवामान विचारा', '📍 स्थान बुद्धिमत्ता — अनेक ठिकाणांचे हवामान पाहा', '📊 अंदाज व इनसाइट्स — तासिक व ७ दिवसांचा अंदाज', '🚨 हवामान सूचना — महत्त्वाची हवामान व सुरक्षा माहिती', '🗺️ परस्परसंवादी नकाशे — भौगोलिक हवामान पाहा', '🇮🇳 बहुभाषिक UI — ९ भारतीय भाषांमध्ये इंटरफेस', '🎙️ आवाज इनपुट — प्रश्न बोलून विचारा', '📱 Android समर्थन — नेटिव्ह Android अनुभव'], approach: '🧠 आमचा दृष्टिकोन', approachQuote: 'फक्त हवामान दाखवू नका. त्याचा अर्थ समजून घेण्यास मदत करा.', approachText: 'वेदरजीपीटी हवामान डेटा, संवादात्मक AI, दृश्यचित्रे आणि संदर्भपूर्ण अंतर्दृष्टी एकत्र करते.', development: '🚀 विकास', developmentText: 'जलद प्रोटोटाइप, चाचणी आणि सुधारणा करण्यासाठी AI-सहाय्यित / वाइब-कोडेड विकास वापरला.', hackathon: '📋 स्मार्ट इंडिया हॅकाथॉन २०२६', problemStatement: 'समस्या विधान:', organization: 'संस्था:', department: 'विभाग:', category: 'श्रेणी:', theme: 'विषय:', tagline: 'वेदरजीपीटी — हवामान समजा. चांगले निर्णय घ्या. 🌦️',
+  },
+  ta: {
+    title: 'வெதர்ஜிபிடி பற்றி', mission: '🌤️ எங்கள் நோக்கம்', missionText: 'வெதர்ஜிபிடி என்பது ஸ்மார்ட் இந்தியா ஹேக்கத்தான் 2026 — பிரச்சினை அறிக்கை 26068-க்காக உருவாக்கப்பட்ட AI-முதல் உரையாடல் வானிலை தளமாகும்.', whatWeDo: '🎯 நாங்கள் செய்வது', doItems: ['🌦️ புரிந்துகொள்ளுங்கள் — சிக்கலான வானிலை தகவலை எளிய நுண்ணறிவாக மாற்றுங்கள்.', '🤖 கேளுங்கள் — இயல்பான மொழியில் வானிலை கேள்விகளைக் கேட்டு AI பதில்களைப் பெறுங்கள்.', '📊 பகுப்பாய்வு செய்யுங்கள் — முன்னறிவிப்பு, மழை, ஈரப்பதம், அழுத்தம் மற்றும் வெப்பநிலையைப் பாருங்கள்.', '🚨 செயல்படுங்கள் — எச்சரிக்கைகள் மற்றும் பாதுகாப்புத் தகவல்களைப் பயன்படுத்துங்கள்.', '🗺️ ஆராயுங்கள் — ஊடாடும் வரைபடங்களில் வானிலையைப் பாருங்கள்.'], keyFeatures: '✨ முக்கிய அம்சங்கள்', featureItems: ['🌡️ நேரடி வானிலைத் தரவு — தற்போதைய நிலைமைகள்', '🤖 உரையாடல் AI — இயல்பான மொழியில் கேளுங்கள்', '📍 இட நுண்ணறிவு — பல இடங்களின் வானிலையைப் பாருங்கள்', '📊 முன்னறிவிப்புகள் மற்றும் நுண்ணறிவுகள் — மணிநேர மற்றும் 7 நாள் முன்னறிவிப்பு', '🚨 வானிலை எச்சரிக்கைகள் — முக்கிய பாதுகாப்புத் தகவல்', '🗺️ ஊடாடும் வரைபடங்கள் — வானிலையைப் புவியியல் ரீதியாகப் பாருங்கள்', '🇮🇳 பல்மொழி UI — 9 இந்திய மொழிகளில் இடைமுகம்', '🎙️ குரல் உள்ளீடு — கேள்விகளைப் பேசுங்கள்', '📱 Android ஆதரவு — மொபைல் அனுபவம்'], approach: '🧠 எங்கள் அணுகுமுறை', approachQuote: 'வானிலையை மட்டும் காட்டாதீர்கள். அதன் அர்த்தத்தைப் புரிந்துகொள்ள உதவுங்கள்.', approachText: 'வெதர்ஜிபிடி வானிலைத் தரவு, உரையாடல் AI, காட்சிப்படுத்தல்கள் மற்றும் சூழல் நுண்ணறிவை இணைக்கிறது.', development: '🚀 மேம்பாடு', developmentText: 'விரைவான முன்மாதிரி மற்றும் மேம்பாட்டிற்காக AI-உதவிய / வைப்கோடட் மேம்பாடு பயன்படுத்தப்பட்டது.', hackathon: '📋 ஸ்மார்ட் இந்தியா ஹேக்கத்தான் 2026', problemStatement: 'பிரச்சினை அறிக்கை:', organization: 'அமைப்பு:', department: 'துறை:', category: 'வகை:', theme: 'கருத்து:', tagline: 'வெதர்ஜிபிடி — வானிலையைப் புரிந்துகொள்ளுங்கள். சிறந்த முடிவுகளை எடுங்கள். 🌦️',
+  },
+  te: {
+    title: 'వెదర్‌జీపీటీ గురించి', mission: '🌤️ మా లక్ష్యం', missionText: 'వెదర్‌జీపీటీ అనేది స్మార్ట్ ఇండియా హ్యాకథాన్ 2026 — సమస్య ప్రకటన 26068 కోసం రూపొందించిన AI-మొదటి సంభాషణాత్మక వాతావరణ వేదిక.', whatWeDo: '🎯 మేము చేసేది', doItems: ['🌦️ అర్థం చేసుకోండి — క్లిష్టమైన వాతావరణ సమాచారాన్ని సులభమైన విషయాలుగా మార్చండి.', '🤖 అడగండి — సహజ భాషలో ప్రశ్నలు అడిగి AI సమాధానాలు పొందండి.', '📊 విశ్లేషించండి — అంచనాలు, వర్షం, తేమ, పీడనం, ఉష్ణోగ్రత చూడండి.', '🚨 చర్య తీసుకోండి — హెచ్చరికలు మరియు భద్రతా సమాచారాన్ని ఉపయోగించండి.', '🗺️ అన్వేషించండి — ఇంటరాక్టివ్ మ్యాప్‌లలో వాతావరణాన్ని చూడండి.'], keyFeatures: '✨ ముఖ్య లక్షణాలు', featureItems: ['🌡️ ప్రత్యక్ష వాతావరణ డేటా — ప్రస్తుత పరిస్థితులు', '🤖 సంభాషణాత్మక AI — సహజ భాషలో వాతావరణం అడగండి', '📍 స్థాన మేధస్సు — అనేక ప్రాంతాల వాతావరణం', '📊 అంచనాలు మరియు ఇన్‌సైట్స్ — గంటవారీ మరియు 7 రోజుల అంచనాలు', '🚨 వాతావరణ హెచ్చరికలు — ముఖ్యమైన భద్రతా సమాచారం', '🗺️ ఇంటరాక్టివ్ మ్యాప్‌లు — వాతావరణాన్ని భౌగోళికంగా చూడండి', '🇮🇳 బహుభాషా UI — 9 భారతీయ భాషల్లో ఇంటర్‌ఫేస్', '🎙️ వాయిస్ ఇన్‌పుట్ — ప్రశ్నలను మాట్లాడండి', '📱 Android మద్దతు — మొబైల్ అనుభవం'], approach: '🧠 మా విధానం', approachQuote: 'వాతావరణాన్ని మాత్రమే చూపించవద్దు. దాని అర్థాన్ని అర్థం చేసుకోవడంలో సహాయపడండి.', approachText: 'వెదర్‌జీపీటీ వాతావరణ డేటా, సంభాషణాత్మక AI, విజువలైజేషన్లు మరియు సందర్భోచిత అంతర్దృష్టులను కలుపుతుంది.', development: '🚀 అభివృద్ధి', developmentText: 'వేగంగా ప్రోటోటైప్ చేయడానికి, పరీక్షించడానికి మరియు మెరుగుపరచడానికి AI-సహాయక అభివృద్ధిని ఉపయోగించారు.', hackathon: '📋 స్మార్ట్ ఇండియా హ్యాకథాన్ 2026', problemStatement: 'సమస్య ప్రకటన:', organization: 'సంస్థ:', department: 'శాఖ:', category: 'వర్గం:', theme: 'థీమ్:', tagline: 'వెదర్‌జీపీటీ — వాతావరణాన్ని అర్థం చేసుకోండి. మెరుగైన నిర్ణయాలు తీసుకోండి. 🌦️',
+  },
+  gu: {
+    title: 'વેધરજિપિટી વિશે', mission: '🌤️ અમારું ધ્યેય', missionText: 'વેધરજિપિટી એ સ્માર્ટ ઇન્ડિયા હેકાથોન 2026 — સમસ્યા નિવેદન 26068 માટે બનાવેલું AI-પ્રથમ વાતચીત આધારિત હવામાન પ્લેટફોર્મ છે.', whatWeDo: '🎯 અમે શું કરીએ છીએ', doItems: ['🌦️ સમજો — જટિલ હવામાન માહિતીને સરળ સમજમાં ફેરવો.', '🤖 પૂછો — સ્વાભાવિક ભાષામાં પ્રશ્નો પૂછો અને AI જવાબો મેળવો.', '📊 વિશ્લેષણ કરો — આગાહી, વરસાદ, ભેજ, દબાણ અને તાપમાન જુઓ.', '🚨 કાર્ય કરો — ચેતવણીઓ અને સુરક્ષા માહિતીનો ઉપયોગ કરો.', '🗺️ શોધો — ઇન્ટરેક્ટિવ નકશા પર હવામાન જુઓ.'], keyFeatures: '✨ મુખ્ય સુવિધાઓ', featureItems: ['🌡️ લાઇવ હવામાન ડેટા — વર્તમાન સ્થિતિ', '🤖 વાતચીત AI — સ્વાભાવિક ભાષામાં હવામાન પૂછો', '📍 સ્થાન બુદ્ધિ — અનેક સ્થળોનું હવામાન', '📊 આગાહીઓ અને ઇનસાઇટ્સ — કલાકદીઠ અને 7 દિવસની આગાહી', '🚨 હવામાન ચેતવણીઓ — મહત્વપૂર્ણ સુરક્ષા માહિતી', '🗺️ ઇન્ટરેક્ટિવ નકશા — ભૌગોલિક હવામાન જુઓ', '🇮🇳 બહુભાષી UI — 9 ભારતીય ભાષાઓમાં ઇન્ટરફેસ', '🎙️ વૉઇસ ઇનપુટ — પ્રશ્નો બોલો', '📱 Android સપોર્ટ — મોબાઇલ અનુભવ'], approach: '🧠 અમારો અભિગમ', approachQuote: 'માત્ર હવામાન ન બતાવો. તેનો અર્થ સમજવામાં લોકોને મદદ કરો.', approachText: 'વેધરજિપિટી હવામાન ડેટા, વાતચીત AI, વિઝ્યુઅલાઇઝેશન અને સંદર્ભિત સમજને જોડે છે.', development: '🚀 વિકાસ', developmentText: 'ઝડપી પ્રોટોટાઇપ અને સુધારા માટે AI-સહાયિત વિકાસનો ઉપયોગ કરવામાં આવ્યો.', hackathon: '📋 સ્માર્ટ ઇન્ડિયા હેકાથોન 2026', problemStatement: 'સમસ્યા નિવેદન:', organization: 'સંસ્થા:', department: 'વિભાગ:', category: 'વર્ગ:', theme: 'થીમ:', tagline: 'વેધરજિપિટી — હવામાન સમજો. વધુ સારા નિર્ણયો લો. 🌦️',
+  },
+  pa: {
+    title: 'ਵੈਦਰਜੀਪੀਟੀ ਬਾਰੇ', mission: '🌤️ ਸਾਡਾ ਮਿਸ਼ਨ', missionText: 'ਵੈਦਰਜੀਪੀਟੀ ਸਮਾਰਟ ਇੰਡੀਆ ਹੈਕਾਥਾਨ 2026 — ਸਮੱਸਿਆ ਬਿਆਨ 26068 ਲਈ ਬਣਾਇਆ ਗਿਆ AI-ਪਹਿਲਾ ਗੱਲਬਾਤੀ ਮੌਸਮ ਪਲੇਟਫਾਰਮ ਹੈ।', whatWeDo: '🎯 ਅਸੀਂ ਕੀ ਕਰਦੇ ਹਾਂ', doItems: ['🌦️ ਸਮਝੋ — ਗੁੰਝਲਦਾਰ ਮੌਸਮ ਜਾਣਕਾਰੀ ਨੂੰ ਸੌਖੀ ਸਮਝ ਵਿੱਚ ਬਦਲੋ।', '🤖 ਪੁੱਛੋ — ਕੁਦਰਤੀ ਭਾਸ਼ਾ ਵਿੱਚ ਸਵਾਲ ਪੁੱਛੋ ਅਤੇ AI ਜਵਾਬ ਲਵੋ।', '📊 ਵਿਸ਼ਲੇਸ਼ਣ ਕਰੋ — ਪੂਰਵ-ਅਨੁਮਾਨ, ਮੀਂਹ, ਨਮੀ, ਦਬਾਅ ਅਤੇ ਤਾਪਮਾਨ ਵੇਖੋ।', '🚨 ਕਾਰਵਾਈ ਕਰੋ — ਚੇਤਾਵਨੀਆਂ ਅਤੇ ਸੁਰੱਖਿਆ ਜਾਣਕਾਰੀ ਵਰਤੋ।', '🗺️ ਖੋਜੋ — ਇੰਟਰਐਕਟਿਵ ਨਕਸ਼ਿਆਂ ਰਾਹੀਂ ਮੌਸਮ ਵੇਖੋ।'], keyFeatures: '✨ ਮੁੱਖ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ', featureItems: ['🌡️ ਲਾਈਵ ਮੌਸਮ ਡੇਟਾ — ਮੌਜੂਦਾ ਹਾਲਾਤ', '🤖 ਗੱਲਬਾਤੀ AI — ਕੁਦਰਤੀ ਭਾਸ਼ਾ ਵਿੱਚ ਮੌਸਮ ਪੁੱਛੋ', '📍 ਸਥਾਨ ਬੁੱਧੀ — ਕਈ ਥਾਵਾਂ ਦਾ ਮੌਸਮ', '📊 ਪੂਰਵ-ਅਨੁਮਾਨ ਅਤੇ ਇਨਸਾਈਟਸ — ਘੰਟਾਵਾਰ ਅਤੇ 7 ਦਿਨਾਂ ਦਾ ਅਨੁਮਾਨ', '🚨 ਮੌਸਮ ਚੇਤਾਵਨੀਆਂ — ਮਹੱਤਵਪੂਰਨ ਸੁਰੱਖਿਆ ਜਾਣਕਾਰੀ', '🗺️ ਇੰਟਰਐਕਟਿਵ ਨਕਸ਼ੇ — ਭੂਗੋਲਿਕ ਮੌਸਮ ਵੇਖੋ', '🇮🇳 ਬਹੁਭਾਸ਼ੀ UI — 9 ਭਾਰਤੀ ਭਾਸ਼ਾਵਾਂ ਵਿੱਚ ਇੰਟਰਫੇਸ', '🎙️ ਵੌਇਸ ਇਨਪੁਟ — ਸਵਾਲ ਬੋਲੋ', '📱 Android ਸਹਾਇਤਾ — ਮੋਬਾਈਲ ਅਨੁਭਵ'], approach: '🧠 ਸਾਡਾ ਤਰੀਕਾ', approachQuote: 'ਸਿਰਫ਼ ਮੌਸਮ ਨਾ ਦਿਖਾਓ। ਲੋਕਾਂ ਨੂੰ ਇਸਦਾ ਮਤਲਬ ਸਮਝਣ ਵਿੱਚ ਮਦਦ ਕਰੋ।', approachText: 'ਵੈਦਰਜੀਪੀਟੀ ਮੌਸਮ ਡੇਟਾ, ਗੱਲਬਾਤੀ AI, ਵਿਜ਼ੁਅਲਾਈਜ਼ੇਸ਼ਨ ਅਤੇ ਸੰਦਰਭਿਕ ਸਮਝ ਨੂੰ ਜੋੜਦਾ ਹੈ।', development: '🚀 ਵਿਕਾਸ', developmentText: 'ਤੇਜ਼ ਪ੍ਰੋਟੋਟਾਈਪ ਅਤੇ ਸੁਧਾਰ ਲਈ AI-ਸਹਾਇਤ ਵਿਕਾਸ ਵਰਤਿਆ ਗਿਆ।', hackathon: '📋 ਸਮਾਰਟ ਇੰਡੀਆ ਹੈਕਾਥਾਨ 2026', problemStatement: 'ਸਮੱਸਿਆ ਬਿਆਨ:', organization: 'ਸੰਸਥਾ:', department: 'ਵਿਭਾਗ:', category: 'ਸ਼੍ਰੇਣੀ:', theme: 'ਥੀਮ:', tagline: 'ਵੈਦਰਜੀਪੀਟੀ — ਮੌਸਮ ਸਮਝੋ। ਬਿਹਤਰ ਫੈਸਲੇ ਲਵੋ। 🌦️',
+  },
+  ml: {
+    title: 'വെതർജിപിടിയെക്കുറിച്ച്', mission: '🌤️ ഞങ്ങളുടെ ദൗത്യം', missionText: 'സ്മാർട്ട് ഇന്ത്യ ഹാക്കത്തോൺ 2026 — പ്രശ്ന പ്രസ്താവന 26068-നായി വികസിപ്പിച്ച AI-ആദ്യ സംഭാഷണ കാലാവസ്ഥാ പ്ലാറ്റ്‌ഫോമാണ് വെതർജിപിടി.', whatWeDo: '🎯 ഞങ്ങൾ ചെയ്യുന്നത്', doItems: ['🌦️ മനസ്സിലാക്കുക — സങ്കീർണ്ണമായ കാലാവസ്ഥാ വിവരങ്ങൾ ലളിതമാക്കുക.', '🤖 ചോദിക്കുക — സ്വാഭാവിക ഭാഷയിൽ ചോദ്യങ്ങൾ ചോദിച്ച് AI ഉത്തരങ്ങൾ നേടുക.', '📊 വിശകലനം ചെയ്യുക — പ്രവചനം, മഴ, ഈർപ്പം, മർദ്ദം, താപനില എന്നിവ കാണുക.', '🚨 പ്രവർത്തിക്കുക — മുന്നറിയിപ്പുകളും സുരക്ഷാ വിവരങ്ങളും ഉപയോഗിക്കുക.', '🗺️ പര്യവേക്ഷണം ചെയ്യുക — ഇന്ററാക്ടീവ് മാപ്പുകളിൽ കാലാവസ്ഥ കാണുക.'], keyFeatures: '✨ പ്രധാന സവിശേഷതകൾ', featureItems: ['🌡️ തത്സമയ കാലാവസ്ഥാ ഡാറ്റ — നിലവിലെ സാഹചര്യങ്ങൾ', '🤖 സംഭാഷണ AI — സ്വാഭാവിക ഭാഷയിൽ കാലാവസ്ഥ ചോദിക്കുക', '📍 ലൊക്കേഷൻ ബുദ്ധി — ഒന്നിലധികം സ്ഥലങ്ങളിലെ കാലാവസ്ഥ', '📊 പ്രവചനങ്ങളും ഇൻസൈറ്റുകളും — മണിക്കൂർ, 7 ദിവസ പ്രവചനം', '🚨 കാലാവസ്ഥാ മുന്നറിയിപ്പുകൾ — പ്രധാന സുരക്ഷാ വിവരങ്ങൾ', '🗺️ ഇന്ററാക്ടീവ് മാപ്പുകൾ — ഭൂമിശാസ്ത്രപരമായി കാലാവസ്ഥ കാണുക', '🇮🇳 ബഹുഭാഷാ UI — 9 ഇന്ത്യൻ ഭാഷകളിൽ ഇന്റർഫേസ്', '🎙️ വോയ്സ് ഇൻപുട്ട് — ചോദ്യങ്ങൾ സംസാരിക്കുക', '📱 Android പിന്തുണ — മൊബൈൽ അനുഭവം'], approach: '🧠 ഞങ്ങളുടെ സമീപനം', approachQuote: 'കാലാവസ്ഥ മാത്രം കാണിക്കരുത്. അതിന്റെ അർത്ഥം മനസ്സിലാക്കാൻ സഹായിക്കുക.', approachText: 'വെതർജിപിടി കാലാവസ്ഥാ ഡാറ്റ, സംഭാഷണ AI, ദൃശ്യവൽക്കരണം, സന്ദർഭോചിതമായ അറിവ് എന്നിവ കൂട്ടിച്ചേർക്കുന്നു.', development: '🚀 വികസനം', developmentText: 'വേഗത്തിലുള്ള പ്രോട്ടോടൈപ്പിനും മെച്ചപ്പെടുത്തലിനുമായി AI-സഹായിത വികസനം ഉപയോഗിച്ചു.', hackathon: '📋 സ്മാർട്ട് ഇന്ത്യ ഹാക്കത്തോൺ 2026', problemStatement: 'പ്രശ്ന പ്രസ്താവന:', organization: 'സ്ഥാപനം:', department: 'വകുപ്പ്:', category: 'വിഭാഗം:', theme: 'പ്രമേയം:', tagline: 'വെതർജിപിടി — കാലാവസ്ഥ മനസ്സിലാക്കുക. മികച്ച തീരുമാനങ്ങൾ എടുക്കുക. 🌦️',
+  },
+}
+
+function renderAboutItem(item: string) {
+  const match = item.match(/^(\S+)\s+(.+?)\s+—\s+(.+)$/)
+  if (!match) return item
+  return <>{match[1]} <strong>{match[2]}</strong> — {match[3]}</>
 }
 
 const speechLanguageMap: Record<LanguageCode, string> = {
@@ -363,6 +444,13 @@ function hasMeaningfulWeatherChange(current: WeatherSnapshot, incoming: WeatherS
 
 function App() {
   const [tab, setTab] = useState<Tab>('weather')
+  const [slideDirection, setSlideDirection] = useState<'right' | 'left' | null>(null)
+  const tabRef = useRef<Tab>(tab)
+  tabRef.current = tab
+
+  const appRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+
   const [location, setLocation] = useState('Bhilai')
   const [locationOpen, setLocationOpen] = useState(false)
   const [locationQuery, setLocationQuery] = useState('')
@@ -379,6 +467,244 @@ function App() {
   ])
   const [weather, setWeather] = useState<WeatherSnapshot>(() => getWeatherSnapshot('Bhilai'))
   const recognitionRef = useRef<{ start: () => void; stop: () => void; abort: () => void; onresult: ((event: any) => void) | null; onend: (() => void) | null; lang: string; continuous: boolean; interimResults: boolean } | null>(null)
+
+  const switchTab = useCallback((targetTab: Tab) => {
+    setTab((currentTab) => {
+      if (currentTab === targetTab) return currentTab
+      const currentIndex = TABS.indexOf(currentTab)
+      const targetIndex = TABS.indexOf(targetTab)
+      setSlideDirection(targetIndex > currentIndex ? 'right' : 'left')
+      window.scrollTo({ top: 0, behavior: 'instant' })
+      return targetTab
+    })
+  }, [])
+
+  const goToNextTab = useCallback(() => {
+    setTab((currentTab) => {
+      const currentIndex = TABS.indexOf(currentTab)
+      if (currentIndex < TABS.length - 1) {
+        setSlideDirection('right')
+        window.scrollTo({ top: 0, behavior: 'instant' })
+        return TABS[currentIndex + 1]
+      }
+      return currentTab
+    })
+  }, [])
+
+  const goToPrevTab = useCallback(() => {
+    setTab((currentTab) => {
+      const currentIndex = TABS.indexOf(currentTab)
+      if (currentIndex > 0) {
+        setSlideDirection('left')
+        window.scrollTo({ top: 0, behavior: 'instant' })
+        return TABS[currentIndex - 1]
+      }
+      return currentTab
+    })
+  }, [])
+
+  const openWeatherTab = useCallback(() => switchTab('weather'), [switchTab])
+  const openAlertsTab = useCallback(() => switchTab('alerts'), [switchTab])
+  const openAskTab = useCallback(() => switchTab('ask'), [switchTab])
+  const openMapTab = useCallback(() => switchTab('map'), [switchTab])
+  const openInsightsTab = useCallback(() => switchTab('insights'), [switchTab])
+  const openAboutTab = useCallback(() => switchTab('about'), [switchTab])
+
+  useEffect(() => {
+    const appEl = appRef.current
+    if (!appEl) return
+
+    let startX = 0
+    let startY = 0
+    let startTime = 0
+    let gesture: 'none' | 'horizontal' | 'vertical' = 'none'
+    let isExcluded = false
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return
+      const touch = e.touches[0]
+      startX = touch.clientX
+      startY = touch.clientY
+      startTime = Date.now()
+      gesture = 'none'
+
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        target.closest(
+          '.bottom-dock, .header-actions, .language-overlay, .leaflet-container, .range-pills, .recommendation-scroll, .city-grid, input, textarea, select, .location-card'
+        )
+      ) {
+        isExcluded = true
+        return
+      }
+      isExcluded = false
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isExcluded || e.touches.length !== 1) return
+      const touch = e.touches[0]
+      const diffX = touch.clientX - startX
+      const diffY = touch.clientY - startY
+
+      if (gesture === 'none') {
+        const absX = Math.abs(diffX)
+        const absY = Math.abs(diffY)
+        if (absX > 7 || absY > 7) {
+          if (absY >= absX) {
+            gesture = 'vertical'
+          } else {
+            gesture = 'horizontal'
+          }
+        }
+      }
+
+      if (gesture === 'horizontal') {
+        if (e.cancelable) {
+          e.preventDefault()
+        }
+
+        const currentIndex = TABS.indexOf(tabRef.current)
+        let offset = diffX
+        if ((currentIndex === 0 && diffX > 0) || (currentIndex === TABS.length - 1 && diffX < 0)) {
+          offset = diffX * 0.25
+        }
+
+        if (contentRef.current) {
+          contentRef.current.style.transition = 'none'
+          contentRef.current.style.transform = `translateX(${offset}px)`
+        }
+      }
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isExcluded) return
+
+      if (gesture === 'horizontal') {
+        const touch = e.changedTouches[0]
+        const diffX = touch.clientX - startX
+        const duration = Date.now() - startTime
+        const velocityX = Math.abs(diffX) / Math.max(duration, 1)
+
+        const currentIndex = TABS.indexOf(tabRef.current)
+
+        if (Math.abs(diffX) > 48 || (Math.abs(diffX) > 24 && velocityX > 0.3)) {
+          if (diffX < 0 && currentIndex < TABS.length - 1) {
+            if (contentRef.current) {
+              contentRef.current.style.transition = 'transform 0.16s ease-out, opacity 0.16s ease-out'
+              contentRef.current.style.transform = 'translateX(-60px)'
+              contentRef.current.style.opacity = '0'
+            }
+            goToNextTab()
+            gesture = 'none'
+            return
+          } else if (diffX > 0 && currentIndex > 0) {
+            if (contentRef.current) {
+              contentRef.current.style.transition = 'transform 0.16s ease-out, opacity 0.16s ease-out'
+              contentRef.current.style.transform = 'translateX(60px)'
+              contentRef.current.style.opacity = '0'
+            }
+            goToPrevTab()
+            gesture = 'none'
+            return
+          }
+        }
+
+        if (contentRef.current) {
+          contentRef.current.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s ease'
+          contentRef.current.style.transform = 'translateX(0)'
+          contentRef.current.style.opacity = '1'
+        }
+      }
+
+      gesture = 'none'
+    }
+
+    const handleTouchCancel = () => {
+      if (contentRef.current) {
+        contentRef.current.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s ease'
+        contentRef.current.style.transform = 'translateX(0)'
+        contentRef.current.style.opacity = '1'
+      }
+      gesture = 'none'
+    }
+
+    appEl.addEventListener('touchstart', handleTouchStart, { passive: true })
+    appEl.addEventListener('touchmove', handleTouchMove, { passive: false })
+    appEl.addEventListener('touchend', handleTouchEnd, { passive: true })
+    appEl.addEventListener('touchcancel', handleTouchCancel, { passive: true })
+
+    return () => {
+      appEl.removeEventListener('touchstart', handleTouchStart)
+      appEl.removeEventListener('touchmove', handleTouchMove)
+      appEl.removeEventListener('touchend', handleTouchEnd)
+      appEl.removeEventListener('touchcancel', handleTouchCancel)
+    }
+  }, [goToNextTab, goToPrevTab])
+
+  useEffect(() => {
+    let wheelAccumulator = 0
+    let wheelTimer: number | null = null
+    let isLocked = false
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        target.closest(
+          '.leaflet-container, .range-pills, .recommendation-scroll, .city-grid, input, textarea, select, .language-modal, .location-card'
+        )
+      ) {
+        return
+      }
+
+      if (isLocked) return
+
+      wheelAccumulator += e.deltaX
+
+      if (wheelTimer) window.clearTimeout(wheelTimer)
+      wheelTimer = window.setTimeout(() => {
+        wheelAccumulator = 0
+      }, 180)
+
+      if (Math.abs(wheelAccumulator) > 35) {
+        isLocked = true
+        if (wheelAccumulator > 0) {
+          goToNextTab()
+        } else {
+          goToPrevTab()
+        }
+        wheelAccumulator = 0
+        window.setTimeout(() => {
+          isLocked = false
+        }, 380)
+      }
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', handleWheel)
+      if (wheelTimer) window.clearTimeout(wheelTimer)
+    }
+  }, [goToNextTab, goToPrevTab])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+      if (e.key === 'ArrowRight') {
+        goToNextTab()
+      } else if (e.key === 'ArrowLeft') {
+        goToPrevTab()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [goToNextTab, goToPrevTab])
 
   useEffect(() => {
     const storedLanguage = localStorage.getItem('weathergpt-language') as LanguageCode | null
@@ -442,11 +768,6 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [locationQuery])
 
-  const openWeatherTab = useCallback(() => setTab('weather'), [])
-  const openAskTab = useCallback(() => setTab('ask'), [])
-  const openAlertsTab = useCallback(() => setTab('alerts'), [])
-  const openMapTab = useCallback(() => setTab('map'), [])
-  const openInsightsTab = useCallback(() => setTab('insights'), [])
 
   const ask = useCallback(async (value = question) => {
     if (!value.trim() || typing) return
@@ -507,7 +828,7 @@ function App() {
     recognitionRef.current = null
   }
 
-  return <div className={darkMode ? 'app dark' : 'app'} lang={language}>
+  return <div ref={appRef} className={darkMode ? 'app dark' : 'app'} lang={language}>
     {showLanguageModal && <div className="language-overlay">
       <div className="language-modal glass-card">
         <div className="language-header">
@@ -542,53 +863,60 @@ function App() {
     </header>
 
     <main className={tab === 'ask' ? 'mobile-main ask-active' : 'mobile-main'}>
-      {tab === 'weather' && <div className="location-bar centered-location">
-        <button className="location-trigger" onClick={() => setLocationOpen(!locationOpen)}>
-          <LocateFixed size={16} />
-          <span>{location}, India</span>
-          <span className="trigger-chevron">⌄</span>
-        </button>
-        <button className="location-search-trigger" onClick={() => { setLocationOpen(true); setLocationQuery('') }} aria-label="Search locations"><Search size={15} /></button>
-        {locationOpen && <div className="location-card glass-card">
-          <div className="location-card-head">
-            <div>
-              <p className="overline">WEATHER LOCATION</p>
-              <h3>{t.locationTitle}</h3>
+      <div
+        key={tab}
+        ref={contentRef}
+        className={`tab-slider-content ${slideDirection === 'right' ? 'slide-from-right' : slideDirection === 'left' ? 'slide-from-left' : ''}`}
+      >
+        {tab === 'weather' && <div className="location-bar centered-location">
+          <button className="location-trigger" onClick={() => setLocationOpen(!locationOpen)}>
+            <LocateFixed size={16} />
+            <span>{location}, India</span>
+            <span className="trigger-chevron">⌄</span>
+          </button>
+          <button className="location-search-trigger" onClick={() => { setLocationOpen(true); setLocationQuery('') }} aria-label="Search locations"><Search size={15} /></button>
+          {locationOpen && <div className="location-card glass-card">
+            <div className="location-card-head">
+              <div>
+                <p className="overline">WEATHER LOCATION</p>
+                <h3>{t.locationTitle}</h3>
+              </div>
+              <button className="location-close" onClick={() => setLocationOpen(false)} aria-label="Close location picker">×</button>
             </div>
-            <button className="location-close" onClick={() => setLocationOpen(false)} aria-label="Close location picker">×</button>
-          </div>
-          <div className="location-card-search">
-            <Search size={15} />
-            <input autoFocus value={locationQuery} onChange={(event) => setLocationQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') selectLocation(locationQuery) }} placeholder="Search any city in India..." />
-          </div>
-          <p className="location-card-label">{t.popularCities.toUpperCase()}</p>
-          <div className="city-grid">
-            {(cityResults.length ? cityResults : indianCities.map((city) => ({ name: city, country: 'India', admin1: 'Popular city' }))).slice(0, 8).map((city) => (
-              <button className={city.name === location ? 'city-chip selected' : 'city-chip'} key={`${city.name}-${city.admin1}`} onClick={() => selectLocation(city.name)}>
-                <LocateFixed size={13} />
-                <span>{city.name}</span>
-                {city.name === location && <b>✓</b>}
-              </button>
-            ))}
-          </div>
-          {locationQuery && <button className="apply-location" onClick={() => selectLocation(locationQuery)}>View weather for “{locationQuery}” <Search size={14} /></button>}
+            <div className="location-card-search">
+              <Search size={15} />
+              <input autoFocus value={locationQuery} onChange={(event) => setLocationQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') selectLocation(locationQuery) }} placeholder="Search any city in India..." />
+            </div>
+            <p className="location-card-label">{t.popularCities.toUpperCase()}</p>
+            <div className="city-grid">
+              {(cityResults.length ? cityResults : indianCities.map((city) => ({ name: city, country: 'India', admin1: 'Popular city' }))).slice(0, 8).map((city) => (
+                <button className={city.name === location ? 'city-chip selected' : 'city-chip'} key={`${city.name}-${city.admin1}`} onClick={() => selectLocation(city.name)}>
+                  <LocateFixed size={13} />
+                  <span>{city.name}</span>
+                  {city.name === location && <b>✓</b>}
+                </button>
+              ))}
+            </div>
+            {locationQuery && <button className="apply-location" onClick={() => selectLocation(locationQuery)}>View weather for “{locationQuery}” <Search size={14} /></button>}
+          </div>}
         </div>}
-      </div>}
 
-      {tab === 'weather' && <WeatherTab weather={weather} quote={quote} onAsk={openAskTab} />}
-      {tab === 'ask' && <AskTab messages={messages} question={question} setQuestion={setQuestion} typing={typing} ask={ask} weather={weather} onMicClick={startVoiceInput} onStopMic={stopVoiceInput} t={t} />}
-      {tab === 'alerts' && <AlertsTab weather={weather} />}
-      {tab === 'map' && <MapTab weather={weather} />}
-      {tab === 'insights' && <InsightsTab weather={weather} />}
-      <FooterCredit />
+        {tab === 'weather' && <WeatherTab weather={weather} quote={quote} onAsk={openAskTab} />}
+        {tab === 'alerts' && <AlertsTab weather={weather} />}
+        {tab === 'ask' && <AskTab messages={messages} question={question} setQuestion={setQuestion} typing={typing} ask={ask} weather={weather} onMicClick={startVoiceInput} onStopMic={stopVoiceInput} t={t} />}
+        {tab === 'map' && <MapTab weather={weather} />}
+        {tab === 'insights' && <InsightsTab weather={weather} />}
+        {tab === 'about' && <AboutTab language={language} />}
+      </div>
     </main>
 
     <nav className="bottom-dock" aria-label="Primary navigation">
       <NavItem icon={Sun} label={t.weatherTab} active={tab === 'weather'} onClick={openWeatherTab} />
-      <NavItem icon={Sparkles} label={t.askAi} active={tab === 'ask'} onClick={openAskTab} accent />
       <NavItem icon={Bell} label={t.alertsTab} active={tab === 'alerts'} onClick={openAlertsTab} count={weather.alerts.length} />
+      <NavItem icon={Sparkles} label={t.askAi} active={tab === 'ask'} onClick={openAskTab} accent />
       <NavItem icon={MapIcon} label={t.mapTab} active={tab === 'map'} onClick={openMapTab} />
       <NavItem icon={BarChart3} label={t.insightsTab} active={tab === 'insights'} onClick={openInsightsTab} />
+      <NavItem icon={Info} label={t.aboutTab} active={tab === 'about'} onClick={openAboutTab} />
     </nav>
   </div>
 }
@@ -898,8 +1226,53 @@ const InsightsTab = memo(function InsightsTab({ weather }: { weather: WeatherSna
   )
 })
 
+const AboutTab = memo(function AboutTab({ language }: { language: LanguageCode }) {
+  const copy = aboutCopy[language]
+  return <section className="tab-content about-tab">
+    <div className="about-header">
+      <h1>{copy.title}</h1>
+    </div>
+    
+    <div className="about-content glass-card">
+      <h2>{copy.mission}</h2>
+      <p><strong>WeatherGPT</strong> {copy.missionText}</p>
+      <p>{copy.missionDetails ?? copy.missionText}</p>
+      
+      <h3>{copy.whatWeDo}</h3>
+      <ul className="feature-list">
+        {copy.doItems.map((item) => <li key={item}>{renderAboutItem(item)}</li>)}
+      </ul>
+      
+      <h3>{copy.keyFeatures}</h3>
+      <ul>
+        {copy.featureItems.map((item) => <li key={item}>{renderAboutItem(item)}</li>)}
+      </ul>
+      
+      <h3>{copy.approach}</h3>
+      <p className="approach-quote"><em>{copy.approachQuote}</em></p>
+      <p>{copy.approachText}</p>
+      
+      <h3>{copy.development}</h3>
+      <p>{copy.developmentText}</p>
+      
+      <h3>{copy.hackathon}</h3>
+      <p><strong>{copy.problemStatement}</strong> <code>26068</code> — <em>WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information</em></p>
+      <ul>
+        <li>🏛️ <strong>{copy.organization}</strong> Ministry of Earth Sciences (MoES)</li>
+        <li>🌦️ <strong>{copy.department}</strong> India Meteorological Department (IMD)</li>
+        <li>💻 <strong>{copy.category}</strong> Software</li>
+        <li>🚨 <strong>{copy.theme}</strong> Disaster Management</li>
+      </ul>
+      
+      <p className="tagline"><strong>{copy.tagline}</strong></p>
+    </div>
+    
+    <FooterCredit />
+  </section>
+})
+
 const NavItem = memo(function NavItem({ icon: Icon, label, active, onClick, accent = false, count }: { icon: typeof Sun; label: string; active: boolean; onClick: () => void; accent?: boolean; count?: number }) { return <button className={active ? 'nav-item active' : 'nav-item'} onClick={onClick}><span className={accent ? 'nav-icon accent' : 'nav-icon'}><Icon size={19} />{count ? <b>{count}</b> : null}</span><small>{label}</small></button> })
-function FooterCredit() { return <div className="footer-credit"><span>Made with</span> ❤️ <span>by Aryan</span></div> }
+function FooterCredit() { return <div className="footer-credit"><span>Made with</span> ❤️ <span>by Team ThreadX</span></div> }
 function ShieldIcon() { return <span className="shield-icon">✓</span> }
 function WeatherGPTMark({ small = false }: { small?: boolean }) { return <span className={small ? 'weather-mark small' : 'weather-mark'}><span /><CloudRain size={small ? 12 : 19} /></span> }
 function MetricWidget({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: string }) { return <div className={`metric-widget ${tone} glass-card`}><span className="metric-widget-icon">{icon}</span><div><small>{label}</small><b>{value}</b></div></div> }
