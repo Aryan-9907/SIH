@@ -9,7 +9,7 @@ describe('weather service live-data helpers', () => {
   })
 
   it('formats the current day label in the app style', () => {
-    const label = formatWeatherDateLabel(new Date('2026-08-25T10:00:00Z'))
+    const label = formatWeatherDateLabel(new Date(2026, 7, 25, 10, 0, 0))
     assert.equal(label, 'TUESDAY, 25 AUGUST')
   })
 

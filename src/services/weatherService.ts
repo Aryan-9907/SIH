@@ -1,3 +1,5 @@
+import { indianCities } from '../data/indianCities'
+
 export type ForecastDay = { day: string; high: number; low: number; rain: number }
 export type Hour = { time: string; temp: number; rain: number }
 export type WeatherAlert = { title: string; severity: string; area: string; time: string }
@@ -40,12 +42,12 @@ const locations: Record<string, WeatherSnapshot> = {
   },
 }
 
-export function formatWeatherDateLabel(date = new Date()) {
+export function formatWeatherDateLabel(date = new Date(), locale = 'en-US') {
   const value = new Date(date)
-  const weekday = value.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' }).toUpperCase()
-  const day = value.getUTCDate()
-  const month = value.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' }).toUpperCase()
-  return `${weekday}, ${day} ${month}`
+  const weekday = value.toLocaleDateString(locale, { weekday: 'long' })
+  const day = value.getDate()
+  const month = value.toLocaleDateString(locale, { month: 'long' })
+  return `${weekday}, ${day} ${month}`.toUpperCase()
 }
 
 export function getWeatherCodeLabel(code: number): string {
@@ -146,24 +148,51 @@ export async function searchCities(query: string) {
   const trimmed = query.trim()
   if (!trimmed) return []
 
-  const params = new URLSearchParams({
-    name: trimmed,
-    count: '8',
-    language: 'en',
-    format: 'json',
-    countryCode: 'IN',
-  })
+  // 1) Instant offline match against the bundled directory of every Indian city/district.
+  const lower = trimmed.toLowerCase()
+  const localMatches = indianCities
+    .filter(([name, state]) => name.toLowerCase().includes(lower) || state.toLowerCase().includes(lower))
+    .slice(0, 30)
+    .map(([name, state, latitude, longitude]) => ({ name, country: 'India', admin1: state, latitude, longitude }))
 
-  const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`)
-  if (!response.ok) return []
-  const payload = await response.json() as { results?: Array<{ name: string; country?: string; admin1?: string; latitude: number; longitude: number }> }
-  return (payload.results ?? []).map((city) => ({
-    name: city.name,
-    country: city.country ?? 'India',
-    admin1: city.admin1 ?? '',
-    latitude: city.latitude,
-    longitude: city.longitude,
-  }))
+  // 2) Fall through to the geocoder so ANY place in India (town/village not in the
+  //    offline list) is still findable.
+  try {
+    const params = new URLSearchParams({
+      name: trimmed,
+      count: '12',
+      language: 'en',
+      format: 'json',
+      countryCode: 'IN',
+    })
+
+    const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`)
+    if (!response.ok) return localMatches
+    const payload = await response.json() as { results?: Array<{ name: string; country?: string; admin1?: string; latitude: number; longitude: number }> }
+    const seen = new Set(localMatches.map((city) => `${city.name.toLowerCase()}|${city.admin1.toLowerCase()}`))
+    const remoteMatches = (payload.results ?? [])
+      .filter((city) => {
+        const key = `${city.name.toLowerCase()}|${(city.admin1 ?? '').toLowerCase()}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .map((city) => ({
+        name: city.name,
+        country: city.country ?? 'India',
+        admin1: city.admin1 ?? '',
+        latitude: city.latitude,
+        longitude: city.longitude,
+      }))
+    return [...localMatches, ...remoteMatches].slice(0, 30)
+  } catch {
+    return localMatches
+  }
+}
+
+export function findCityCoordinates(cityName: string) {
+  const match = indianCities.find(([name]) => name.toLowerCase() === cityName.trim().toLowerCase())
+  return match ? { city: match[0], state: match[1], latitude: match[2], longitude: match[3] } : null
 }
 
 async function fetchGeoLocation(location: string) {
